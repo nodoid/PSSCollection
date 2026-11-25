@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="PSSCollection.Android/PSSCollection.Android.csproj" />
+  <Project Path="PSSCollection.Core/PSSCollection.Core.csproj" />
+  <Project Path="PSSCollection.DesktopGL/PSSCollection.DesktopGL.csproj" />
+  <Project Path="PSSCollection.Engine/PSSCollection.Engine.csproj" />
+  <Project Path="PSSCollection.iOS/PSSCollection.iOS.csproj" />
+  <Project Path="PSSCollection.Tests/PSSCollection.Tests.csproj" />
+  <Project Path="PSSCollection.WindowsDX/PSSCollection.WindowsDX.csproj" />
+</Solution>

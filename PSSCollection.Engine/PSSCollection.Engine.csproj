@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>PSSCollection.Engine</RootNamespace>
+    <AssemblyName>PSSCollection.Engine</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PSSCollection.Tests" />
+  </ItemGroup>
+</Project>

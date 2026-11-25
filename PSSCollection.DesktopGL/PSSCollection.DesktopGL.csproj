@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Desktop OpenGL head: the macOS app (and runs on Windows / Linux for development). -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <TieredCompilation>false</TieredCompilation>
+    <AssemblyName>PSSCollection</AssemblyName>
+    <RootNamespace>PSSCollection.DesktopGL</RootNamespace>
+    <CFBundleIdentifier>uk.co.allthejohnsons.psscollection</CFBundleIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PSSCollection.Core\PSSCollection.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="$(MonoGameVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+    <None Include="PSSCollection.icns" />
+  </ItemGroup>
+</Project>

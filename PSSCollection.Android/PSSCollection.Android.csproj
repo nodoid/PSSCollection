@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <!-- Android 12L / API 32 and later. -->
+    <SupportedOSPlatformVersion>32</SupportedOSPlatformVersion>
+    <ApplicationId>uk.co.allthejohnsons.psscollection</ApplicationId>
+    <ApplicationTitle>The PSS Oric Collection</ApplicationTitle>
+    <ApplicationVersion>$(BuildNumber)</ApplicationVersion>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <AssemblyName>PSSCollection</AssemblyName>
+    <RootNamespace>PSSCollection.Android</RootNamespace>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+  </PropertyGroup>
+  <!-- Upload key, if present. The password is never stored: pass it in PSS_KEYSTORE_PASS. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And Exists('$(HOME)/keys/pss-upload.jks')">
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(HOME)/keys/pss-upload.jks</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>pss</AndroidSigningKeyAlias>
+    <AndroidSigningStorePass>env:PSS_KEYSTORE_PASS</AndroidSigningStorePass>
+    <AndroidSigningKeyPass>env:PSS_KEYSTORE_PASS</AndroidSigningKeyPass>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PSSCollection.Core\PSSCollection.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.Android" Version="$(MonoGameVersion)" />
+  </ItemGroup>
+</Project>

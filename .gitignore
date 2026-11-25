@@ -1,0 +1,37 @@
+# Build output - never committed
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userprefs
+.vs/
+.idea/
+.vscode/
+
+# Published artefacts
+releases/
+artifacts/
+*.ipa
+*.apk
+*.aab
+*.msix
+*.app/
+
+# Signing material and profiles are installed locally, never stored in the repo
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.jks
+*.keystore
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+*.log
+
+# Test results
+TestResults/
+*.trx

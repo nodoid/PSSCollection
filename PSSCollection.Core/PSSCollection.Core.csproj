@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>PSSCollection.Core</RootNamespace>
+    <AssemblyName>PSSCollection.Core</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Compile against MonoGame only; each platform head supplies the runtime. -->
+    <PackageReference Include="MonoGame.Framework.Native" Version="$(MonoGameVersion)">
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PSSCollection.Engine\PSSCollection.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PSSCollection.Tests" />
+  </ItemGroup>
+</Project>
