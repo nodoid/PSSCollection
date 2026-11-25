@@ -24,6 +24,12 @@ namespace PSSCollection.Core.Platform
         /// <summary>Touch feed from the platform itself, when it can provide one.</summary>
         Input.ITouchSource TouchSource { get; }
 
+        /// <summary>
+        /// Device roll for tilt steering: -1 fully left, 0 level, +1 fully right. Always 0 on a
+        /// platform without a motion sensor.
+        /// </summary>
+        float Tilt { get; }
+
         void Quit(Game game);
 
         void SetOrientation(Game game, bool portrait);
@@ -52,6 +58,8 @@ namespace PSSCollection.Core.Platform
         public virtual Vector2 TouchSpace => Vector2.Zero;
 
         public virtual Input.ITouchSource TouchSource => null;
+
+        public virtual float Tilt => 0f;
 
         public virtual void Quit(Game game) => game.Exit();
 

@@ -32,6 +32,9 @@ namespace PSSCollection.Core.Screens
         /// <summary>Hopper and Light Cycle never shoot, so their touch layout has no fire button.</summary>
         private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede or GameId.ElektroStorm;
 
+        /// <summary>Invaders steers by tilting the phone; tapping the screen still fires.</summary>
+        private static bool UsesTilt(GameId id) => id == GameId.Invaders;
+
         private double _finishedTimer;
         private bool _finished;
         private int _bestBefore;
@@ -166,6 +169,27 @@ namespace PSSCollection.Core.Screens
             bool down = input.Player.Down;
             bool fire = input.Player.Fire;
             bool firePressed = input.Player.FirePressed;
+
+            if (Game.IsMobile && UsesTilt(_gameId))
+            {
+                bool touching = input.Touches.Count > 0;
+
+                float tilt = Game.Platform.Tilt;
+                if (tilt < -0.15f)
+                    left = true;
+                else if (tilt > 0.15f)
+                    right = true;
+
+                if (touching)
+                {
+                    fire = true;
+                    if (_lastTouchRaw == null)
+                        firePressed = true;
+                }
+
+                _lastTouchRaw = touching ? new Vector2(0, 0) : (Vector2?)null;
+                return new InputState(left, right, up, down, fire, pause, firePressed);
+            }
 
             if (Game.IsMobile)
             {
@@ -395,6 +419,25 @@ namespace PSSCollection.Core.Screens
         private void DrawTouchControls(double time)
         {
             float pulse = 0.5f + 0.2f * Ui.Pulse(time, 2.4);
+
+            if (UsesTilt(_gameId))
+            {
+                // Tilt steering: no direction pad at all, just the fire instruction.
+                Canvas.Circle(FireCentre, FireRadius, new Color(255, 255, 255, 18));
+                Canvas.CircleOutline(FireCentre, FireRadius, Palette.WithAlpha(Palette.Magenta, 0.5f), 3f);
+                Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24),
+                    2f, Palette.WithAlpha(Palette.Magenta, 0.9f));
+
+                float level = Math.Clamp(Game.Platform.Tilt, -1f, 1f);
+                var gauge = new Rectangle(440, 638, 400, 12);
+                Canvas.RoundedRect(gauge, Palette.WithAlpha(Palette.TextDim, 0.25f), 6);
+                float knob = gauge.X + (level + 1f) * 0.5f * gauge.Width;
+                Canvas.Circle(new Vector2(knob, gauge.Y + 6), 9, Palette.WithAlpha(Palette.Green, pulse + 0.3f));
+
+                Canvas.TextCentred("TILT TO STEER    TAP TO FIRE", new Rectangle(0, 600, 1280, 22), 1.7f,
+                    Palette.WithAlpha(Palette.TextDim, 0.9f));
+                return;
+            }
 
             Canvas.Circle(DpadCentre, DpadRadius, new Color(255, 255, 255, 18));
             Canvas.CircleOutline(DpadCentre, DpadRadius, Palette.WithAlpha(Palette.Cyan, 0.35f), 2f);

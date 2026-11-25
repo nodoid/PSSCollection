@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CoreGraphics;
+using CoreMotion;
 using Foundation;
 using UIKit;
 using Microsoft.Xna.Framework;
@@ -22,12 +23,15 @@ namespace PSSCollection.iOS
         private static PssGame _game;
         private static UIWindow _window;
 
+        internal static IosPlatformServices TiltSource { get; private set; }
+
         internal static void RunGame(UIWindowScene scene)
         {
             if (_game != null)
                 return;
 
-            _game = new PssGame(new IosPlatformServices());
+            TiltSource = new IosPlatformServices();
+            _game = new PssGame(TiltSource);
             _game.Run();
             AttachToScene(scene);
         }
@@ -48,6 +52,8 @@ namespace PSSCollection.iOS
             UIView root = _window.RootViewController?.View;
             if (root != null)
                 root.AddSubview(new TouchOverlayView(root.Bounds));
+
+            TiltSource.Start(_window);
         }
 
         private static UIWindow FindGameWindow()
@@ -170,8 +176,51 @@ namespace PSSCollection.iOS
     internal sealed class IosPlatformServices : DesktopPlatformServices
     {
         private readonly IosTouchSource _touches = new IosTouchSource();
+        private readonly CMMotionManager _motion = new CMMotionManager();
+        private float _tilt;
+        private UIWindow _window;
 
         public override ITouchSource TouchSource => _touches;
+
+        public override float Tilt => _tilt;
+
+        /// <summary>Starts accelerometer updates and turns device roll into a -1..1 steering value.</summary>
+        public void Start(UIWindow window)
+        {
+            _window = window;
+            if (!_motion.AccelerometerAvailable)
+                return;
+
+            _motion.AccelerometerUpdateInterval = 1.0 / 45.0;
+            _motion.StartAccelerometerUpdates(NSOperationQueue.MainQueue, (data, error) =>
+            {
+                if (data == null)
+                    return;
+
+                CMAcceleration a = data.Acceleration;
+                UIInterfaceOrientation orientation = _window?.WindowScene?.InterfaceOrientation
+                                                      ?? UIInterfaceOrientation.LandscapeLeft;
+
+                // Roll is rotation about the axis pointing at the viewer: gravity moves along the
+                // screen's horizontal axis. Which device axis that is depends on the orientation.
+                double screenRight;
+                double screenUp;
+
+                if (orientation == UIInterfaceOrientation.LandscapeRight)
+                {
+                    screenRight = a.Y;
+                    screenUp = -a.X;
+                }
+                else
+                {
+                    screenRight = -a.Y;
+                    screenUp = a.X;
+                }
+
+                double roll = Math.Atan2(screenRight, screenUp);
+                _tilt = (float)Math.Clamp(roll / 0.30, -1.0, 1.0);
+            });
+        }
 
         public override bool IsMobile => true;
 
