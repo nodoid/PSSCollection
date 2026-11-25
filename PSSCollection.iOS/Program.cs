@@ -179,6 +179,9 @@ namespace PSSCollection.iOS
         private readonly CMMotionManager _motion = new CMMotionManager();
         private float _tilt;
         private float _tiltY;
+        private double _pitchBase;
+        private double _pitchSum;
+        private int _pitchSamples;
         private UIWindow _window;
 
         public override ITouchSource TouchSource => _touches;
@@ -226,10 +229,20 @@ namespace PSSCollection.iOS
                 _tilt = -(float)Math.Clamp(roll / 0.30, -1.0, 1.0);
 
                 // Pitch: the part of gravity pointing out of the screen grows as the top edge is
-                // tipped away, which gives a second steering axis for games that need one.
+                // tipped away, which gives a second steering axis for games that need one. How the
+                // phone is held at rest varies a lot, so the first second is averaged and used as
+                // the neutral pose.
                 double inPlane = Math.Max(0.25, Math.Sqrt(screenRight * screenRight + screenUp * screenUp));
                 double pitch = Math.Atan2(a.Z, inPlane);
-                _tiltY = (float)Math.Clamp(pitch / 0.30, -1.0, 1.0);
+
+                if (_pitchSamples < 45)
+                {
+                    _pitchSum += pitch;
+                    _pitchSamples++;
+                    _pitchBase = _pitchSum / _pitchSamples;
+                }
+
+                _tiltY = (float)Math.Clamp((pitch - _pitchBase) / 0.30, -1.0, 1.0);
             });
         }
 

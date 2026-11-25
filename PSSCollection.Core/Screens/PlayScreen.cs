@@ -104,7 +104,7 @@ namespace PSSCollection.Core.Screens
         private Vector2? _stormLastTouch;
         private bool _stormDragged;
         private bool _stormReturning;
-        private bool _hopArmed = true;
+        private double _tiltHopCooldown;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -344,13 +344,12 @@ namespace PSSCollection.Core.Screens
 
                 if (_gameId == GameId.Hopper)
                 {
-                    // A frog hops once per tilt: it has to come back level before the next hop.
-                    if (Math.Abs(tilt) < 0.10f && Math.Abs(pitch) < 0.15f)
-                        _hopArmed = true;
+                    // Tilt hops the frog, at a steady rhythm while the phone stays tipped.
+                    _tiltHopCooldown -= deltaSeconds;
 
-                    if (_hopArmed && (Math.Abs(tilt) > 0.18f || Math.Abs(pitch) > 0.25f))
+                    if (_tiltHopCooldown <= 0 && (Math.Abs(tilt) > 0.18f || Math.Abs(pitch) > 0.28f))
                     {
-                        _hopArmed = false;
+                        _tiltHopCooldown = 0.30;
                         if (Math.Abs(tilt) >= Math.Abs(pitch))
                         {
                             if (tilt < 0)
