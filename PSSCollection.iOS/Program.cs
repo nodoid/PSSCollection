@@ -179,9 +179,13 @@ namespace PSSCollection.iOS
         private readonly CMMotionManager _motion = new CMMotionManager();
         private float _tilt;
         private float _tiltY;
-        private double _pitchBase;
-        private double _pitchSum;
-        private int _pitchSamples;
+        private double _baseRight;
+        private double _baseUp;
+        private double _basePitch;
+        private double _sumRight;
+        private double _sumUp;
+        private double _sumPitch;
+        private int _samples;
         private UIWindow _window;
 
         public override ITouchSource TouchSource => _touches;
@@ -223,24 +227,30 @@ namespace PSSCollection.iOS
                     screenUp = a.X;
                 }
 
-                double roll = Math.Atan2(screenRight, screenUp);
+                double inPlane = Math.Sqrt(screenRight * screenRight + screenUp * screenUp);
+                double pitch = Math.Atan2(a.Z, inPlane);
 
-                // Negated: tilting the phone right must send the ship right.
-                _tilt = -(float)Math.Clamp(roll / 0.30, -1.0, 1.0);
-
-                // Vertical lean uses the gravity component along the screen's up axis - the same
-                // two accelerometer channels roll is built from, so it is always reported. Tipping
-                // the top edge away shrinks that component; how the phone is held at rest varies,
-                // so the first second is averaged and treated as level.
-                if (_pitchSamples < 45)
+                // How the phone is held at rest varies enormously, and an absolute angle saturates
+                // the moment it is not perfectly upright. The first second is averaged into a
+                // neutral pose and every reading is taken relative to it: roll as the angle
+                // between the two in-plane gravity vectors, pitch from the out-of-screen component.
+                if (_samples < 45)
                 {
-                    _pitchSum += screenUp;
-                    _pitchSamples++;
-                    _pitchBase = _pitchSum / _pitchSamples;
+                    _sumRight += screenRight;
+                    _sumUp += screenUp;
+                    _sumPitch += pitch;
+                    _samples++;
+                    _baseRight = _sumRight / _samples;
+                    _baseUp = _sumUp / _samples;
+                    _basePitch = _sumPitch / _samples;
                 }
 
-                double lean = screenUp - _pitchBase;
-                _tiltY = (float)Math.Clamp(lean / 0.35, -1.0, 1.0);
+                double dot = _baseRight * screenRight + _baseUp * screenUp;
+                double cross = _baseRight * screenUp - _baseUp * screenRight;
+                double roll = Math.Atan2(cross, dot);
+
+                _tilt = (float)Math.Clamp(roll / 0.30, -1.0, 1.0);
+                _tiltY = (float)Math.Clamp((pitch - _basePitch) / 0.35, -1.0, 1.0);
             });
         }
 
