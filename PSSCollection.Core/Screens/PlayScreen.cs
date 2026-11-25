@@ -36,11 +36,54 @@ namespace PSSCollection.Core.Screens
         private static bool UsesTilt(GameId id) => id == GameId.Invaders;
 
         /// <summary>Touches that start on a HUD button belong to that button, never the game.</summary>
-        private static bool InHudButton(Vector2 point)
+        private bool InHudButton(GameInput input, TouchContact touch)
         {
-            int x = (int)point.X;
-            int y = (int)point.Y;
-            return ExitButton.Contains(x, y) || PauseButton.Contains(x, y);
+            int x = (int)touch.Position.X;
+            int y = (int)touch.Position.Y;
+            return ExitButton.Contains(x, y) || PauseButton.Contains(x, y) || InCornerBand(input, touch, 0.84f, 1.01f);
+        }
+
+        /// <summary>
+        /// The HUD buttons live in the top right corner. Touch mapping to the virtual canvas can be
+        /// a little off on a device, so a press in that corner of the screen counts as the button
+        /// even when the mapped point misses the rect by a few tens of pixels.
+        /// </summary>
+        private static bool InCornerBand(GameInput input, TouchContact touch, float fromX, float toX)
+        {
+            if (input.TouchSpaceWidth <= 0 || input.TouchSpaceHeight <= 0)
+                return false;
+
+            float nx = touch.Raw.X / input.TouchSpaceWidth;
+            float ny = touch.Raw.Y / input.TouchSpaceHeight;
+            return nx >= fromX && nx < toX && ny <= 0.18f;
+        }
+
+        private bool TouchExit(GameInput input)
+        {
+            if (input.TouchPressedIn(ExitButton))
+                return true;
+
+            foreach (TouchContact touch in input.Touches)
+            {
+                if (touch.Pressed && InCornerBand(input, touch, 0.84f, 0.93f))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool TouchPause(GameInput input)
+        {
+            if (input.TouchPressedIn(PauseButton))
+                return true;
+
+            foreach (TouchContact touch in input.Touches)
+            {
+                if (touch.Pressed && InCornerBand(input, touch, 0.93f, 1.01f))
+                    return true;
+            }
+
+            return false;
         }
 
         private double _finishedTimer;
@@ -101,7 +144,7 @@ namespace PSSCollection.Core.Screens
             {
                 // Leaving a game must be possible on a device with no keyboard: the HUD exit
                 // button, or QUIT on the pause panel.
-                if (input.TouchPressedIn(ExitButton))
+                if (TouchExit(input))
                 {
                     Game.Audio.Play(SoundId.MenuSelect);
                     Go(new MenuScreen(Game));
@@ -124,7 +167,7 @@ namespace PSSCollection.Core.Screens
             }
 
             bool pause = input.Pause;
-            if (Game.IsMobile && input.TouchPressedIn(PauseButton))
+            if (Game.IsMobile && TouchPause(input))
                 pause = true;
             if (_game.IsPaused && input.Confirm)
                 pause = true;
@@ -189,7 +232,7 @@ namespace PSSCollection.Core.Screens
                 bool touching = false;
                 foreach (TouchContact touch in input.Touches)
                 {
-                    if (InHudButton(touch.Position))
+                    if (InHudButton(input, touch))
                         continue;
 
                     touching = true;
@@ -218,7 +261,7 @@ namespace PSSCollection.Core.Screens
                 Vector2? raw = null;
                 foreach (TouchContact touch in input.Touches)
                 {
-                    if (InHudButton(touch.Position))
+                    if (InHudButton(input, touch))
                         continue;
 
                     raw = touch.Raw;
