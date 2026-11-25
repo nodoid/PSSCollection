@@ -107,7 +107,6 @@ namespace PSSCollection.Core.Screens
         private bool _stormReturning;
         private double _tiltHopCooldown;
         private double _tiltTurnCooldown;
-        private string _tiltReadout = string.Empty;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -375,9 +374,6 @@ namespace PSSCollection.Core.Screens
                         }
                     }
 
-                    _tiltReadout = MathF.Round(tilt, 2).ToString("0.00") + " / " +
-                                   MathF.Round(pitch, 2).ToString("0.00");
-
                     return new InputState(left, right, up, down, false, pause, false);
                 }
 
@@ -407,9 +403,6 @@ namespace PSSCollection.Core.Screens
                             down = true;
                         }
                     }
-
-                    _tiltReadout = MathF.Round(tilt, 2).ToString("0.00") + " / " +
-                                   MathF.Round(pitch, 2).ToString("0.00");
 
                     return new InputState(left, right, up, down, false, pause, false);
                 }
@@ -688,7 +681,8 @@ namespace PSSCollection.Core.Screens
 
             if (_gameId is GameId.Hopper or GameId.LightCycle)
             {
-                Canvas.Text("TILT " + _tiltReadout, 24, 690, 1.4f, Palette.WithAlpha(Palette.TextDim, 0.85f));
+                Canvas.Text(_gameId == GameId.Hopper ? "TILT TO HOP" : "TILT TO TURN", 24, 692, 1.4f,
+                    Palette.WithAlpha(Palette.TextDim, 0.9f));
                 return;
             }
 

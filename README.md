@@ -66,6 +66,19 @@ dotnet publish PSSCollection.WindowsDX -c Release -r win-x64 --self-contained tr
 `tools/capture.sh <scenario>` drives the macOS build with synthetic input and writes window
 screenshots, which is how the layouts were checked.
 
+## Releases and stores
+
+```bash
+tools/build_release.sh                     # everything, into Releases/<version>/
+tools/build_release.sh macos ios android   # or pick targets
+tools/build_windows.sh Releases/1.0.0      # MSIX x64 + arm64, packed in the Windows VM
+python3 tools/make_store_artwork.py        # store artwork and framed screenshots in Stores/
+```
+
+`Releases/` holds the macOS Mac App Store `.pkg`, the iOS `.ipa`, the signed Android `.aab`
+and `.apk`, and one MSIX per Windows architecture. `Stores/` holds the screenshots, icons
+and artwork for each store together with the submission copy. Neither folder is committed.
+
 ## Tests
 
 `dotnet test PSSCollection.Tests` runs the engine suite: scoring and extra lives, skill tuning,
@@ -88,3 +101,9 @@ The games are original PSS releases, written in 1983 for the Oric-1:
   installed on this machine; the tape images themselves were obtained, not used.
 
 All code in this repository is new; no original PSS code or artwork is included.
+
+## Licence
+
+The DILLIGAF licence (Do I Look Like I Give A F***): do what you like with it - copy, change,
+sell, port it - with no attribution and no warranty. The full text is in `LICENSE`. It is not an
+OSI-approved licence, which will surprise nobody.

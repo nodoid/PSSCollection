@@ -10,8 +10,10 @@ obj/
 .idea/
 .vscode/
 
-# Published artefacts
+# Published artefacts and store submission assets - local only, never committed
 releases/
+Releases/
+Stores/
 artifacts/
 *.ipa
 *.apk
@@ -35,3 +37,6 @@ Thumbs.db
 # Test results
 TestResults/
 *.trx
+
+# Publish output from tools/build_macos.sh - generated, never committed
+build/

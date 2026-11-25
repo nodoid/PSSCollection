@@ -54,6 +54,9 @@ namespace PSSCollection.iOS
                 root.AddSubview(new TouchOverlayView(root.Bounds));
 
             TiltSource.Start(_window);
+#if DEBUG
+            ShotDriver.Start(_window);
+#endif
         }
 
         private static UIWindow FindGameWindow()
@@ -89,6 +92,84 @@ namespace PSSCollection.iOS
                 AppDelegate.RunGame(windowScene);
         }
     }
+
+#if DEBUG
+    /// <summary>
+    /// Replays a scripted sequence of taps so store screenshots can be taken on a simulator,
+    /// which offers no way to send touches. Debug builds only, and only when PSSC_SHOT names
+    /// the screen to reach, so the shipping app has no such path.
+    /// </summary>
+    internal static class ShotDriver
+    {
+        // A timer that nothing references is collected before it fires.
+        private static readonly List<System.Threading.Timer> Timers = new List<System.Threading.Timer>();
+
+        public static void Start(UIWindow window)
+        {
+            string shot = Environment.GetEnvironmentVariable("PSSC_SHOT");
+            Console.WriteLine("SHOT driver start: '" + shot + "' bounds " + window.Bounds);
+            if (string.IsNullOrEmpty(shot))
+                return;
+
+            int id = 900;
+            foreach ((double at, float x, float y) in Plan(shot))
+            {
+                int tapId = id++;
+                Schedule(window, tapId, at, x, y, true);
+                Schedule(window, tapId, at + 0.12, x, y, false);
+            }
+        }
+
+        /// <summary>Virtual 1280x720 positions, timed from launch.</summary>
+        private static (double, float, float)[] Plan(string shot)
+        {
+            if (shot == "title")
+                return Array.Empty<(double, float, float)>();
+
+            var plan = new List<(double, float, float)> { (1.6, 640, 390) };
+            if (shot == "menu")
+                return plan.ToArray();
+
+            // Card centres on the 3x2 selection grid, then the SKILLED row.
+            (float X, float Y) card = shot switch
+            {
+                "invaders" => (234, 219),
+                "centipede" => (640, 219),
+                "hopper" => (1046, 219),
+                "storm" => (234, 445),
+                _ => (640, 445)
+            };
+            plan.Add((2.5, card.X, card.Y));
+            plan.Add((3.4, 640, 302));
+
+            if (shot == "storm")
+            {
+                plan.Add((5.0, 500, 300));
+                plan.Add((5.6, 820, 220));
+            }
+            else if (shot == "hopper")
+            {
+                plan.Add((5.2, 1100, 640));
+            }
+
+            return plan.ToArray();
+        }
+
+        private static void Schedule(UIWindow window, int id, double at, float x, float y, bool began)
+        {
+            var timer = new System.Threading.Timer(_ =>
+            {
+                var bounds = window.Bounds;
+                double scale = Math.Min(bounds.Width / 1280.0, bounds.Height / 720.0);
+                double offsetX = (bounds.Width - 1280 * scale) * 0.5;
+                double offsetY = (bounds.Height - 720 * scale) * 0.5;
+                Console.WriteLine($"SHOT tap {id} {began} -> {offsetX + x * scale:0.0},{offsetY + y * scale:0.0}");
+                IosTouchFeed.Publish(id, (float)(offsetX + x * scale), (float)(offsetY + y * scale), began, !began);
+            }, null, TimeSpan.FromSeconds(at), System.Threading.Timeout.InfiniteTimeSpan);
+            Timers.Add(timer);
+        }
+    }
+#endif
 
     /// <summary>Collects touches from UIKit, in view points.</summary>
     internal static class IosTouchFeed

@@ -1,0 +1,43 @@
+THE DILLIGAF LICENCE
+DILLIGAF = "Do I Look Like I Give A F***"
+
+Version 1, October 2026
+Copyright (c) 2026 P F Johnson
+
+The PSS Oric Collection - the source, the artwork, the tools and the
+store copy.
+
+Permission to use, copy, modify, merge, publish, distribute, sublicense,
+sell, port, mangle, obfuscate, print on a mug or feed to a compiler you
+do not trust is granted, free of charge, to anybody who wants it.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND
+NON-INFRINGEMENT, AND ANY WARRANTY THAT YOUR HIGH SCORE WILL SURVIVE OR
+THAT THE CENTIPEDE WILL NOT SPLIT IN AN UNFAIR PLACE.  IN NO EVENT SHALL
+THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE, THE USE OF THE SOFTWARE, OR THE ATTEMPTED
+PERFECT GAME OF HOPPER.
+
+NO ATTRIBUTION IS REQUIRED.  No copyright notice has to be kept, no
+"based on" line has to be added, and nobody has to ask first - that is
+the whole point of the licence.
+
+WHERE THE LAW WILL NOT ALLOW THE ABOVE - implied warranties that cannot
+be disclaimed, moral rights, a jurisdiction that wants something more
+formal - the same answer applies: take the widest permission that
+jurisdiction permits, and accept no liability beyond the price you paid
+for the game, which was nothing.
+
+THIRD-PARTY BITS keep their own licences and are not relicensed here:
+MonoGame is MS-PL, NVorbis is MIT, the .NET runtime is MIT and xUnit v3
+is Apache 2.0.  They are the framework and the test runner, not part of
+the games.
+
+THE FIVE GAMES are PSS's, from 1983.  This repository holds a new
+implementation of their rules - no original PSS code, artwork or tape
+data - and this licence covers only that new work.
+
+Do I look like I give a f***?  No.  Now go and beat 1983's Skilled.

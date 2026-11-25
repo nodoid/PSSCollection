@@ -18,6 +18,13 @@ dotnet publish PSSCollection.DesktopGL -c Release -r "$RID" --self-contained tru
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp -R "$OUT"/. "$APP/Contents/MacOS/"
 
+# A publish marks some managed assemblies executable. codesign --deep takes any
+# executable file for code and then rejects those PE assemblies as unsigned ("code
+# object is not signed at all"), so only the apphost and the native libraries stay
+# executable. An App Store bundle wants exactly that anyway.
+find "$APP/Contents/MacOS" -type f ! -name PSSCollection ! -name '*.dylib' ! -name '*.so' \
+    -exec chmod 644 {} +
+
 if [ -f PSSCollection.DesktopGL/PSSCollection.icns ]; then
     cp PSSCollection.DesktopGL/PSSCollection.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
