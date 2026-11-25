@@ -21,6 +21,9 @@ namespace PSSCollection.Core.Platform
         /// </summary>
         Vector2 TouchSpace { get; }
 
+        /// <summary>Touch feed from the platform itself, when it can provide one.</summary>
+        Input.ITouchSource TouchSource { get; }
+
         void Quit(Game game);
 
         void SetOrientation(Game game, bool portrait);
@@ -47,6 +50,8 @@ namespace PSSCollection.Core.Platform
             : "DESKTOP";
 
         public virtual Vector2 TouchSpace => Vector2.Zero;
+
+        public virtual Input.ITouchSource TouchSource => null;
 
         public virtual void Quit(Game game) => game.Exit();
 

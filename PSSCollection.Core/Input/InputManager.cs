@@ -138,6 +138,7 @@ namespace PSSCollection.Core.Input
         private readonly List<TouchContact> _published = new List<TouchContact>();
 
         private readonly Vector2 _platformTouchSpace;
+        private readonly ITouchSource _touchSource;
         private float _maxTouchX;
         private float _maxTouchY;
         private float _spaceWidth;
@@ -149,10 +150,11 @@ namespace PSSCollection.Core.Input
         private int _verticalDirection;
         private bool _hasDirectionTimer;
 
-        public InputManager(bool isMobile, Vector2 platformTouchSpace = default)
+        public InputManager(bool isMobile, Vector2 platformTouchSpace = default, ITouchSource touchSource = null)
         {
             IsMobile = isMobile;
             _platformTouchSpace = platformTouchSpace;
+            _touchSource = touchSource;
             if (isMobile)
                 TouchPanel.EnabledGestures = GestureType.None;
         }
@@ -308,6 +310,30 @@ namespace PSSCollection.Core.Input
             Rectangle space = spaceWidth > 0 && spaceHeight > 0
                 ? new Rectangle(0, 0, (int)Math.Ceiling(spaceWidth), (int)Math.Ceiling(spaceHeight))
                 : destination;
+
+            // A platform feed is preferred: on iOS the touch panel can report a position that
+            // never moves, while UIKit always gives the finger's real location in view points.
+            if (_touchSource != null && (_touchSource.HasDelivered || state.Count == 0))
+            {
+                foreach (TouchPoint point in _touchSource.Read())
+                {
+                    if (point.Ended)
+                        continue;
+
+                    current.Add(point.Id);
+                    _maxTouchX = Math.Max(_maxTouchX, point.Position.X);
+                    _maxTouchY = Math.Max(_maxTouchY, point.Position.Y);
+                    _touches.Add(new TouchContact(point.Id,
+                        ScreenToVirtual(point.Position, space),
+                        point.Position,
+                        point.Began || !_previousTouches.Contains(point.Id)));
+                }
+
+                _previousTouches.Clear();
+                foreach (int id in current)
+                    _previousTouches.Add(id);
+                return;
+            }
 
             foreach (TouchLocation location in state)
             {
