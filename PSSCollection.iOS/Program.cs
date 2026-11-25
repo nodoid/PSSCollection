@@ -181,10 +181,8 @@ namespace PSSCollection.iOS
         private float _tiltY;
         private double _baseRight;
         private double _baseUp;
-        private double _basePitch;
         private double _sumRight;
         private double _sumUp;
-        private double _sumPitch;
         private int _samples;
         private UIWindow _window;
 
@@ -227,30 +225,23 @@ namespace PSSCollection.iOS
                     screenUp = a.X;
                 }
 
-                double inPlane = Math.Sqrt(screenRight * screenRight + screenUp * screenUp);
-                double pitch = Math.Atan2(a.Z, inPlane);
-
-                // How the phone is held at rest varies enormously, and an absolute angle saturates
-                // the moment it is not perfectly upright. The first second is averaged into a
-                // neutral pose and every reading is taken relative to it: roll as the angle
-                // between the two in-plane gravity vectors, pitch from the out-of-screen component.
+                // Each steering axis is its own gravity component, measured against the pose the
+                // phone is first held in. Leaning sideways moves weight along the screen's
+                // horizontal axis and tipping forwards moves it along the vertical one, so the two
+                // stay separate however the phone is held - the angles derived from them did not:
+                // held flat the in-plane gravity is tiny, and the angle between two tiny vectors is
+                // mostly noise, which sent forward tips off as side-to-side hops.
                 if (_samples < 45)
                 {
                     _sumRight += screenRight;
                     _sumUp += screenUp;
-                    _sumPitch += pitch;
                     _samples++;
                     _baseRight = _sumRight / _samples;
                     _baseUp = _sumUp / _samples;
-                    _basePitch = _sumPitch / _samples;
                 }
 
-                double dot = _baseRight * screenRight + _baseUp * screenUp;
-                double cross = _baseRight * screenUp - _baseUp * screenRight;
-                double roll = Math.Atan2(cross, dot);
-
-                _tilt = (float)Math.Clamp(roll / 0.30, -1.0, 1.0);
-                _tiltY = (float)Math.Clamp((pitch - _basePitch) / 0.35, -1.0, 1.0);
+                _tilt = (float)Math.Clamp((screenRight - _baseRight) / 0.30, -1.0, 1.0);
+                _tiltY = (float)Math.Clamp((screenUp - _baseUp) / 0.30, -1.0, 1.0);
             });
         }
 
