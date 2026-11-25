@@ -187,11 +187,6 @@ namespace PSSCollection.Core.Screens
                         if (dragged)
                             _stickMoved = true;
 
-                        // Holding the stick keeps the guns going, except where every shot is
-                        // rationed (Missile Command) and should be a deliberate tap.
-                        if (_game is not ElektroStormGame)
-                            fire = true;
-
                         if (dragged)
                         {
                             if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
@@ -211,27 +206,10 @@ namespace PSSCollection.Core.Screens
                         }
                         else
                         {
-                            // With a finger down but not yet moving, steer from where it is on the
-                            // screen. One direction at a time - the dominant axis - so games that
-                            // hop or step one way per press (Hopper, Centipede) get four clean
-                            // directions instead of a diagonal.
-                            float nx = (input.TouchSpaceWidth > 0 ? touch.Raw.X / input.TouchSpaceWidth : 0.5f) - 0.5f;
-                            float ny = (input.TouchSpaceHeight > 0 ? touch.Raw.Y / input.TouchSpaceHeight : 0.5f) - 0.5f;
-
-                            if (Math.Abs(nx) >= Math.Abs(ny))
-                            {
-                                if (nx < -0.05f)
-                                    left = true;
-                                else if (nx > 0.05f)
-                                    right = true;
-                            }
-                            else
-                            {
-                                if (ny < -0.05f)
-                                    up = true;
-                                else if (ny > 0.05f)
-                                    down = true;
-                            }
+                            // A finger that is down but not moving steers nowhere: absolute
+                            // screen position is not trustworthy on every platform, and a press
+                            // must never turn into a shot.
+                            fire = false;
                         }
 
                         continue;
@@ -418,7 +396,7 @@ namespace PSSCollection.Core.Screens
             Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24), 2f,
                 Palette.WithAlpha(Palette.Magenta, 0.9f));
 
-            Canvas.TextCentred("HOLD TO MOVE - IT FIRES WHILE YOU STEER", new Rectangle(0, 600, 1280, 22), 1.6f,
+            Canvas.TextCentred("DRAG TO MOVE - YOUR GUNS FIRE AS YOU MOVE", new Rectangle(0, 600, 1280, 22), 1.6f,
                 Palette.WithAlpha(Palette.TextDim, 0.85f));
         }
     }
