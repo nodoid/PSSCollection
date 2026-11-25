@@ -228,21 +228,19 @@ namespace PSSCollection.iOS
                 // Negated: tilting the phone right must send the ship right.
                 _tilt = -(float)Math.Clamp(roll / 0.30, -1.0, 1.0);
 
-                // Pitch: the part of gravity pointing out of the screen grows as the top edge is
-                // tipped away, which gives a second steering axis for games that need one. How the
-                // phone is held at rest varies a lot, so the first second is averaged and used as
-                // the neutral pose.
-                double inPlane = Math.Max(0.25, Math.Sqrt(screenRight * screenRight + screenUp * screenUp));
-                double pitch = Math.Atan2(a.Z, inPlane);
-
+                // Vertical lean uses the gravity component along the screen's up axis - the same
+                // two accelerometer channels roll is built from, so it is always reported. Tipping
+                // the top edge away shrinks that component; how the phone is held at rest varies,
+                // so the first second is averaged and treated as level.
                 if (_pitchSamples < 45)
                 {
-                    _pitchSum += pitch;
+                    _pitchSum += screenUp;
                     _pitchSamples++;
                     _pitchBase = _pitchSum / _pitchSamples;
                 }
 
-                _tiltY = (float)Math.Clamp((pitch - _pitchBase) / 0.30, -1.0, 1.0);
+                double lean = screenUp - _pitchBase;
+                _tiltY = (float)Math.Clamp(lean / 0.35, -1.0, 1.0);
             });
         }
 
