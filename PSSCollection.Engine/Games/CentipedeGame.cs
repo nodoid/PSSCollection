@@ -16,6 +16,7 @@ namespace PSSCollection.Engine.Games
         public const float Cell = 20f;
         public const float Width = Columns * Cell;    // 800
         public const float Height = Rows * Cell;      // 600
+        public const int SpawnRow = 6;
         public const int PlayerZoneTopRow = 24;
         public const float PlayerZoneTop = PlayerZoneTopRow * Cell;   // 480
         public const float PlayerSize = 18f;
@@ -172,7 +173,10 @@ namespace PSSCollection.Engine.Games
         private void SpawnChain(int level)
         {
             var chain = new Chain { Direction = Rng.Chance(0.5) ? 1 : -1, Vertical = 1 };
-            int startRow = 0;
+
+            // Start clear of the top edge: on a phone the HUD strip sits over the first 96 pixels
+            // of the board, and the centipede used to be born underneath it.
+            int startRow = SpawnRow;
             int startColumn = chain.Direction > 0 ? 0 : Columns - 1;
 
             int length = StartingSegments + Math.Min(level - 1, 4);
