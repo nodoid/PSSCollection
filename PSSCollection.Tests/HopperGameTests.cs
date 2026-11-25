@@ -14,6 +14,8 @@ namespace PSSCollection.Tests
             return game;
         }
 
+        private static int Facing(HopperGame game) => game.Facing;
+
         [Fact]
         public void StartsOnTheBankWithAFullClock()
         {
@@ -24,6 +26,24 @@ namespace PSSCollection.Tests
             Assert.Equal(HopperGame.TimeUnits, game.TimeLeft);
             Assert.Equal(4, game.Lives);
             Assert.Equal(0, game.BaysFilled);
+        }
+
+        [Fact]
+        public void TheFrogFacesTheWayItHopped()
+        {
+            HopperGame game = Start();
+
+            game.TestHop(-1, 0);
+            Assert.Equal(3, Facing(game));
+
+            game.TestHop(1, 0);
+            Assert.Equal(1, Facing(game));
+
+            game.TestHop(0, 1);
+            Assert.Equal(2, Facing(game));
+
+            game.TestHop(0, -1);
+            Assert.Equal(0, Facing(game));
         }
 
         [Fact]

@@ -84,6 +84,9 @@ namespace PSSCollection.Engine.Games
 
         private float _playerX;
         private int _playerRow = StartRow;
+
+        /// <summary>Which way the frog last hopped: 0 up, 1 right, 2 down, 3 left.</summary>
+        private int _facing;
         private double _hopTimer;
         private double _respawnTimer;
         private int _timeLeft = TimeUnits;
@@ -108,6 +111,9 @@ namespace PSSCollection.Engine.Games
         public int PlayerColumn => Math.Clamp((int)Math.Round(_playerX / Cell), 0, Columns - 1);
 
         public float PlayerX => _playerX;
+
+        /// <summary>0 up, 1 right, 2 down, 3 left - the way the frog last hopped.</summary>
+        public int Facing => _facing;
 
         public int BaysFilled => _baysFilled;
 
@@ -249,6 +255,7 @@ namespace PSSCollection.Engine.Games
             _bestRow = StartRow;
             _hopTimer = 0;
             _riding = false;
+            _facing = 0;
         }
 
         protected override void UpdateCore(double deltaSeconds, InputState input)
@@ -388,6 +395,15 @@ namespace PSSCollection.Engine.Games
             else if (input.Down)
                 dy = 1;
 
+            if (dx < 0)
+                _facing = 3;
+            else if (dx > 0)
+                _facing = 1;
+            else if (dy < 0)
+                _facing = 0;
+            else if (dy > 0)
+                _facing = 2;
+
             if (dx != 0 || dy != 0)
                 Hop(dx, dy);
         }
@@ -396,6 +412,15 @@ namespace PSSCollection.Engine.Games
         {
             _hopTimer = HopCooldown;
             Queue(SoundId.Push);
+
+            if (dx < 0)
+                _facing = 3;
+            else if (dx > 0)
+                _facing = 1;
+            else if (dy < 0)
+                _facing = 0;
+            else if (dy > 0)
+                _facing = 2;
 
             int row = Math.Clamp(_playerRow + dy, HomeRow, StartRow);
             int column = Math.Clamp((int)Math.Round(_playerX / Cell) + dx, 0, Columns - 1);
@@ -612,7 +637,7 @@ namespace PSSCollection.Engine.Games
             {
                 _entities.Add(new Entity(EntityKind.Player,
                     new Vector2(_playerX + Cell * 0.1f, _playerRow * Cell + Cell * 0.1f),
-                    new Vector2(Cell * 0.8f, Cell * 0.8f)));
+                    new Vector2(Cell * 0.8f, Cell * 0.8f), _facing));
             }
         }
 

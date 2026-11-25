@@ -16,6 +16,8 @@ namespace PSSCollection.Core.Screens
         private const int GapY = 24;
         private const int GridTop = 118;
 
+        private static readonly Rectangle QuitButton = new Rectangle(1146, 618, 96, 34);
+
         private int _index;
         private double _time;
 
@@ -42,10 +44,29 @@ namespace PSSCollection.Core.Screens
         {
             _time += deltaSeconds;
 
+            // A click on any card picks that game straight away, not just the highlighted one.
             for (int i = 0; i < Count; i++)
             {
-                if (Hover(input, CardRect(i)) && input.PointerMoved)
+                if (!Hover(input, CardRect(i)))
+                    continue;
+
+                if (input.PointerClicked)
+                {
+                    _index = i;
+                    Game.Audio.Play(SoundId.MenuSelect);
+                    Go(new SkillScreen(Game, Catalogue.At(i)));
+                    return;
+                }
+
+                if (input.PointerMoved)
                     SetIndex(i, false);
+            }
+
+            if (!Game.IsMobile && input.PointerClicked &&
+                QuitButton.Contains((int)input.Pointer.X, (int)input.Pointer.Y))
+            {
+                Game.QuitToDesktop();
+                return;
             }
 
             if (input.Horizontal != 0)
@@ -67,7 +88,7 @@ namespace PSSCollection.Core.Screens
                 return;
             }
 
-            if (input.Confirm || (input.PointerClicked && Hover(input, CardRect(_index))))
+            if (input.Confirm)
             {
                 Game.Audio.Play(SoundId.MenuSelect);
                 Go(new SkillScreen(Game, Catalogue.At(_index)));
@@ -106,8 +127,13 @@ namespace PSSCollection.Core.Screens
 
             DrawCreditsPanel();
 
-            string left = Game.IsMobile ? "TAP A GAME" : "ARROWS / STICK CHOOSE    FIRE PLAY    H HIGH SCORES";
+            string left = Game.IsMobile
+                ? "TAP A GAME"
+                : "CLICK A GAME OR USE THE ARROWS    H HIGH SCORES    ESC QUITS";
             Ui.Footer(Canvas, left, "BEST SCORES ARE KEPT", accent);
+
+            if (!Game.IsMobile)
+                Ui.Button(Canvas, QuitButton, "QUIT", false, Palette.TextDim, 1.5f);
 
             Canvas.Text("EVERY GAME HAS FOUR SKILL LEVELS AND ITS OWN HIGH SCORE TABLE",
                 80, 596, 1.7f, Palette.WithAlpha(Palette.TextDim, 0.9f));

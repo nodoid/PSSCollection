@@ -50,7 +50,7 @@ namespace PSSCollection.Core.Graphics
             {
                 case EntityKind.Player:
                     if (game == GameId.Hopper)
-                        DrawFrog(canvas, centre, width, height, time);
+                        DrawFrog(canvas, centre, width, height, time, entity.Variant);
                     else if (game == GameId.LightCycle)
                         DrawCycle(canvas, centre, width, entity.Rotation, Palette.Cyan);
                     else
@@ -329,7 +329,19 @@ namespace PSSCollection.Core.Graphics
         /// A frog seen from above: fat body, two bulging eyes, front arms and long back legs that
         /// kick through a hop cycle.
         /// </summary>
-        private static void DrawFrog(ScreenCanvas canvas, Vector2 centre, float width, float height, double time)
+        /// <summary>Turns a frog-local offset so the sprite faces the way it last hopped.</summary>
+        private static Vector2 Turn(Vector2 v, int facing)
+        {
+            switch (facing & 3)
+            {
+                case 1: return new Vector2(-v.Y, v.X);
+                case 2: return new Vector2(-v.X, -v.Y);
+                case 3: return new Vector2(v.Y, -v.X);
+                default: return v;
+            }
+        }
+
+        private static void DrawFrog(ScreenCanvas canvas, Vector2 centre, float width, float height, double time, int facing)
         {
             Color skin = new Color(122, 222, 106);
             Color shade = new Color(64, 156, 70);
@@ -341,8 +353,11 @@ namespace PSSCollection.Core.Graphics
             // One hop cycle: legs croak out, body lifts a little.
             float phase = (float)((time * 1.6) % 1.0);
             float kick = MathF.Sin(phase * MathF.PI * 2f);
-            Vector2 lift = new Vector2(0, -h * 0.10f * MathF.Max(0f, kick));
-            Vector2 c = centre + lift;
+            Vector2 c = centre + new Vector2(0, -h * 0.10f * MathF.Max(0f, kick));
+
+            // Every offset below is frog-local: forward is -Y, and Turn() spins the whole sprite
+            // so a frog that hopped left, right or down looks different from one sitting facing up.
+            Vector2 P(float dx, float dy) => c + Turn(new Vector2(dx, dy), facing);
 
             canvas.Glow(centre, w * 2.2f, Palette.WithAlpha(Palette.Green, 0.22f));
 
@@ -351,9 +366,9 @@ namespace PSSCollection.Core.Graphics
             float kneeY = h * (0.28f - 0.16f * kick);
             foreach (float side in new[] { -1f, 1f })
             {
-                Vector2 hip = c + new Vector2(side * w * 0.34f, h * 0.10f);
-                Vector2 knee = c + new Vector2(side * reach, kneeY);
-                Vector2 foot = c + new Vector2(side * w * 1.02f, h * (0.62f + 0.12f * kick));
+                Vector2 hip = P(side * w * 0.34f, h * 0.10f);
+                Vector2 knee = P(side * reach, kneeY);
+                Vector2 foot = P(side * w * 1.02f, h * (0.62f + 0.12f * kick));
 
                 canvas.Line(hip, knee, skin, 4.5f);
                 canvas.Line(knee, foot, skin, 3.5f);
@@ -363,31 +378,38 @@ namespace PSSCollection.Core.Graphics
             // Front arms, reaching forward and slightly out.
             foreach (float side in new[] { -1f, 1f })
             {
-                Vector2 shoulder = c + new Vector2(side * w * 0.30f, -h * 0.34f);
-                Vector2 hand = c + new Vector2(side * w * (0.52f + 0.06f * kick), -h * (0.62f - 0.05f * kick));
+                Vector2 shoulder = P(side * w * 0.30f, -h * 0.34f);
+                Vector2 hand = P(side * w * (0.52f + 0.06f * kick), -h * (0.62f - 0.05f * kick));
                 canvas.Line(shoulder, hand, skin, 3.5f);
                 canvas.Circle(hand, w * 0.07f, skin);
             }
 
-            // Body: wide in the middle, tapering into the snout.
-            canvas.Circle(c + new Vector2(0, h * 0.16f), w * 0.60f, skin);
-            canvas.Circle(c + new Vector2(0, -h * 0.18f), w * 0.44f, skin);
-            canvas.Rect(c.X - w * 0.58f, c.Y - h * 0.22f, w * 1.16f, h * 0.42f, skin);
+            // Body: wide across the shoulders, tapering into the snout.
+            canvas.Circle(P(0, h * 0.16f), w * 0.60f, skin);
+            canvas.Circle(P(0, -h * 0.18f), w * 0.44f, skin);
+
+            Vector2 bodyEdge = P(w * 0.58f, h * 0.20f);
+            Vector2 bodyCorner = P(-w * 0.58f, -h * 0.22f);
+            canvas.Rect(MathF.Min(bodyEdge.X, bodyCorner.X), MathF.Min(bodyEdge.Y, bodyCorner.Y),
+                MathF.Abs(bodyEdge.X - bodyCorner.X), MathF.Abs(bodyEdge.Y - bodyCorner.Y), skin);
 
             // Pale spine stripe, which reads at small sizes.
-            canvas.Rect(c.X - w * 0.10f, c.Y - h * 0.30f, w * 0.20f, h * 0.52f, pale);
+            Vector2 spineA = P(-w * 0.10f, -h * 0.30f);
+            Vector2 spineB = P(w * 0.10f, h * 0.22f);
+            canvas.Rect(MathF.Min(spineA.X, spineB.X), MathF.Min(spineA.Y, spineB.Y),
+                MathF.Abs(spineA.X - spineB.X), MathF.Abs(spineA.Y - spineB.Y), pale);
 
             // Head: snout and a wide mouth line.
-            canvas.Circle(c + new Vector2(0, -h * 0.52f), w * 0.30f, skin);
-            canvas.Line(c + new Vector2(-w * 0.34f, -h * 0.40f), c + new Vector2(w * 0.34f, -h * 0.40f), shade, 2.5f);
+            canvas.Circle(P(0, -h * 0.52f), w * 0.30f, skin);
+            canvas.Line(P(-w * 0.34f, -h * 0.40f), P(w * 0.34f, -h * 0.40f), shade, 2.5f);
 
             // Eyes: two domes sitting proud of the head, with dark pupils.
             foreach (float side in new[] { -1f, 1f })
             {
-                Vector2 eye = c + new Vector2(side * w * 0.30f, -h * 0.62f);
+                Vector2 eye = P(side * w * 0.30f, -h * 0.62f);
                 canvas.Circle(eye, w * 0.19f, skin);
                 canvas.Circle(eye, w * 0.12f, Palette.White);
-                canvas.Circle(eye + new Vector2(0, h * 0.02f), w * 0.06f, new Color(20, 30, 20));
+                canvas.Circle(eye + Turn(new Vector2(0, h * 0.02f), facing), w * 0.06f, new Color(20, 30, 20));
             }
         }
 
@@ -461,7 +483,7 @@ namespace PSSCollection.Core.Graphics
             {
                 canvas.RoundedRect(rect, new Color(30, 90, 50), 8);
                 canvas.RoundedOutline(rect, Palette.Green, 8, 2);
-                DrawFrog(canvas, centre, w * 0.7f, h * 0.7f, time);
+                DrawFrog(canvas, centre, w * 0.7f, h * 0.7f, time, 0);
             }
             else
             {
