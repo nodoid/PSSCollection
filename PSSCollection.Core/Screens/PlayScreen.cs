@@ -182,8 +182,9 @@ namespace PSSCollection.Core.Screens
                     {
                         stickSeen = true;
                         Vector2 delta = touch.Raw - _stickAnchor;
+                        bool dragged = Math.Abs(delta.X) > StickDeadZone || Math.Abs(delta.Y) > StickDeadZone;
 
-                        if (Math.Abs(delta.X) > StickDeadZone || Math.Abs(delta.Y) > StickDeadZone)
+                        if (dragged)
                             _stickMoved = true;
 
                         // Holding the stick keeps the guns going, except where every shot is
@@ -191,18 +192,38 @@ namespace PSSCollection.Core.Screens
                         if (_game is not ElektroStormGame)
                             fire = true;
 
-                        if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
+                        if (dragged)
                         {
-                            if (delta.X < -StickDeadZone)
-                                left = true;
-                            else if (delta.X > StickDeadZone)
-                                right = true;
+                            if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
+                            {
+                                if (delta.X < -StickDeadZone)
+                                    left = true;
+                                else if (delta.X > StickDeadZone)
+                                    right = true;
+                            }
+                            else
+                            {
+                                if (delta.Y < -StickDeadZone)
+                                    up = true;
+                                else if (delta.Y > StickDeadZone)
+                                    down = true;
+                            }
                         }
                         else
                         {
-                            if (delta.Y < -StickDeadZone)
+                            // With a finger down but not yet moving, steer from where it is on the
+                            // screen: left third goes left, right third goes right, and so on.
+                            float nx = input.TouchSpaceWidth > 0 ? touch.Raw.X / input.TouchSpaceWidth : 0.5f;
+                            float ny = input.TouchSpaceHeight > 0 ? touch.Raw.Y / input.TouchSpaceHeight : 0.5f;
+
+                            if (nx < 0.4f)
+                                left = true;
+                            else if (nx > 0.6f)
+                                right = true;
+
+                            if (ny < 0.35f)
                                 up = true;
-                            else if (delta.Y > StickDeadZone)
+                            else if (ny > 0.65f)
                                 down = true;
                         }
 
@@ -218,12 +239,10 @@ namespace PSSCollection.Core.Screens
 
                 if (!stickSeen && _stickId >= 0)
                 {
-                    // A finger lifted without dragging is a tap, which fires.
-                    if (!_stickMoved)
-                    {
-                        fire = true;
+                    // Missile Command fires on a deliberate tap; elsewhere holding the stick
+                    // already fires, so a press never turns into a shot by itself.
+                    if (!_stickMoved && _game is ElektroStormGame)
                         firePressed = true;
-                    }
 
                     _stickId = -1;
                     _stickMoved = false;
@@ -392,7 +411,7 @@ namespace PSSCollection.Core.Screens
             Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24), 2f,
                 Palette.WithAlpha(Palette.Magenta, 0.9f));
 
-            Canvas.TextCentred("DRAG TO MOVE, ANYWHERE    TAP TO FIRE", new Rectangle(0, 600, 1280, 22), 1.6f,
+            Canvas.TextCentred("HOLD TO MOVE - IT FIRES WHILE YOU STEER", new Rectangle(0, 600, 1280, 22), 1.6f,
                 Palette.WithAlpha(Palette.TextDim, 0.85f));
         }
     }

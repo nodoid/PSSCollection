@@ -38,8 +38,11 @@ namespace PSSCollection.Core.Input
         private readonly List<TouchContact> _touches;
 
         public GameInput(int horizontal, int vertical, bool confirm, bool back, bool pause, bool highScores, bool clear,
-            Vector2 pointer, bool pointerMoved, bool pointerClicked, InputState player, List<TouchContact> touches)
+            Vector2 pointer, bool pointerMoved, bool pointerClicked, InputState player, List<TouchContact> touches,
+            float touchSpaceWidth = 0f, float touchSpaceHeight = 0f)
         {
+            TouchSpaceWidth = touchSpaceWidth;
+            TouchSpaceHeight = touchSpaceHeight;
             Horizontal = horizontal;
             Vertical = vertical;
             Confirm = confirm;
@@ -105,6 +108,15 @@ namespace PSSCollection.Core.Input
             return false;
         }
 
+        /// <summary>
+        /// Size of the space touch positions are reported in, widened to fit whatever the device
+        /// has actually sent. Platforms disagree about points, pixels and back-buffer units, so
+        /// this is measured rather than assumed.
+        /// </summary>
+        public float TouchSpaceWidth { get; }
+
+        public float TouchSpaceHeight { get; }
+
         public bool PointerIn(Rectangle area) =>
             area.Contains((int)Pointer.X, (int)Pointer.Y);
     }
@@ -124,6 +136,9 @@ namespace PSSCollection.Core.Input
         private readonly HashSet<int> _previousTouches = new HashSet<int>();
         private readonly List<TouchContact> _touches = new List<TouchContact>();
         private readonly List<TouchContact> _published = new List<TouchContact>();
+
+        private float _maxTouchX;
+        private float _maxTouchY;
 
         private float _horizontalTimer;
         private float _verticalTimer;
@@ -261,8 +276,11 @@ namespace PSSCollection.Core.Input
             _published.Clear();
             _published.AddRange(_touches);
 
+            float spaceWidth = Math.Max(TouchPanel.DisplayWidth, _maxTouchX);
+            float spaceHeight = Math.Max(TouchPanel.DisplayHeight, _maxTouchY);
+
             Current = new GameInput(horizontal, vertical, confirm, back, pause, highScores, clear, pointer,
-                pointerMoved, pointerClicked, player, _published);
+                pointerMoved, pointerClicked, player, _published, spaceWidth, spaceHeight);
         }
 
         private void UpdateTouches(Rectangle destination)
@@ -284,6 +302,8 @@ namespace PSSCollection.Core.Input
                     continue;
 
                 current.Add(location.Id);
+                _maxTouchX = Math.Max(_maxTouchX, location.Position.X);
+                _maxTouchY = Math.Max(_maxTouchY, location.Position.Y);
                 _touches.Add(new TouchContact(location.Id,
                     ScreenToVirtual(location.Position, space),
                     location.Position,
