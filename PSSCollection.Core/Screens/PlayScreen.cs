@@ -576,14 +576,15 @@ namespace PSSCollection.Core.Screens
             // lives stop short of them instead of running underneath.
             int hudRight = Game.IsMobile ? 1076 : 1120;
             Canvas.TextRight("WAVE " + _game.Level, new Rectangle(hudRight - 300, 20, 300, 26), 2.6f, accent);
-            Canvas.TextRight("LIVES", new Rectangle(hudRight - 300, 56, 300, 18), 1.5f, Palette.TextDim);
+            // The label sits above the ship icons, not across them.
+            Canvas.TextRight("LIVES", new Rectangle(hudRight - 300, 48, 300, 16), 1.5f, Palette.TextDim);
 
             for (int i = 0; i < Math.Min(_game.Lives, 6); i++)
             {
                 float x = hudRight - i * 34;
-                Canvas.Line(new Vector2(x, 86), new Vector2(x - 10, 66), Palette.Green, 3f);
-                Canvas.Line(new Vector2(x, 86), new Vector2(x + 10, 66), Palette.Green, 3f);
-                Canvas.Line(new Vector2(x - 10, 66), new Vector2(x + 10, 66), Palette.Cyan, 2.5f);
+                Canvas.Line(new Vector2(x, 88), new Vector2(x - 10, 68), Palette.Green, 3f);
+                Canvas.Line(new Vector2(x, 88), new Vector2(x + 10, 68), Palette.Green, 3f);
+                Canvas.Line(new Vector2(x - 10, 68), new Vector2(x + 10, 68), Palette.Cyan, 2.5f);
             }
 
             if (Game.IsMobile)
