@@ -16,6 +16,7 @@ namespace PSSCollection.Core.Screens
         private static readonly Rectangle ExitButton = new Rectangle(1128, 20, 56, 48);
         private static readonly Rectangle ResumeButton = new Rectangle(320, 412, 300, 62);
         private static readonly Rectangle QuitButton = new Rectangle(660, 412, 300, 62);
+        private static readonly Rectangle MenuButton = new Rectangle(1146, 650, 96, 36);
 
         private static readonly Vector2 DpadCentre = new Vector2(168, 654);
         private const float DpadRadius = 78f;
@@ -30,7 +31,7 @@ namespace PSSCollection.Core.Screens
         private const float TouchMoveThreshold = 2.5f;
 
         /// <summary>Hopper and Light Cycle never shoot, so their touch layout has no fire button.</summary>
-        private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede or GameId.ElektroStorm;
+        private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede;
 
         /// <summary>Invaders steers by tilting the phone; tapping the screen still fires.</summary>
         private static bool UsesTilt(GameId id) => id == GameId.Invaders;
@@ -57,6 +58,10 @@ namespace PSSCollection.Core.Screens
             float ny = touch.Raw.Y / input.TouchSpaceHeight;
             return nx >= fromX && nx < toX && ny <= 0.18f;
         }
+
+        private static bool Pressed(Rectangle area, GameInput input) =>
+            input.TouchPressedIn(area) ||
+            (input.PointerClicked && area.Contains((int)input.Pointer.X, (int)input.Pointer.Y));
 
         private bool TouchExit(GameInput input)
         {
@@ -94,6 +99,11 @@ namespace PSSCollection.Core.Screens
         private int _steerX;
         private int _steerY;
         private bool _tapCandidate;
+
+        private Vector2 _stormAnchor;
+        private Vector2? _stormLastTouch;
+        private bool _stormDragged;
+        private bool _stormReturning;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -140,6 +150,15 @@ namespace PSSCollection.Core.Screens
                 return;
             }
 
+            // Desktop has no touch screen, so the MENU chip on the HUD is the pointer's way out.
+            if (!Game.IsMobile && input.PointerClicked &&
+                MenuButton.Contains((int)input.Pointer.X, (int)input.Pointer.Y))
+            {
+                Game.Audio.Play(SoundId.MenuSelect);
+                Go(new MenuScreen(Game));
+                return;
+            }
+
             if (Game.IsMobile)
             {
                 // Leaving a game must be possible on a device with no keyboard: the HUD exit
@@ -151,19 +170,20 @@ namespace PSSCollection.Core.Screens
                     return;
                 }
 
-                if (_game.IsPaused && input.TouchPressedIn(ResumeButton))
-                {
-                    _game.IsPaused = false;
-                    Game.Audio.Play(SoundId.MenuSelect);
-                    return;
-                }
+            }
 
-                if (_game.IsPaused && input.TouchPressedIn(QuitButton))
-                {
-                    Game.Audio.Play(SoundId.MenuSelect);
-                    Go(new MenuScreen(Game));
-                    return;
-                }
+            if (_game.IsPaused && Pressed(ResumeButton, input))
+            {
+                _game.IsPaused = false;
+                Game.Audio.Play(SoundId.MenuSelect);
+                return;
+            }
+
+            if (_game.IsPaused && Pressed(QuitButton, input))
+            {
+                Game.Audio.Play(SoundId.MenuSelect);
+                Go(new MenuScreen(Game));
+                return;
             }
 
             bool pause = input.Pause;
@@ -172,7 +192,7 @@ namespace PSSCollection.Core.Screens
             if (_game.IsPaused && input.Confirm)
                 pause = true;
 
-            AimStormIfPointer(input);
+            AimStormIfPointer(input, deltaSeconds);
 
             InputState state = BuildPlayerInput(deltaSeconds, input, pause);
             _game.Update(deltaSeconds, state);
@@ -187,23 +207,98 @@ namespace PSSCollection.Core.Screens
             }
         }
 
-        /// <summary>Touch and mouse aim the crosshair directly in the Missile Command game.</summary>
-        private void AimStormIfPointer(GameInput input)
+        /// <summary>
+        /// The crosshair follows the mouse on desktop and a dragging finger on a phone, where a tap
+        /// fires and letting go drifts the sight back to where the drag started.
+        /// </summary>
+        private void AimStormIfPointer(GameInput input, double deltaSeconds)
         {
             if (_game is not ElektroStormGame storm)
                 return;
 
-            if (input.PointerClicked)
+            if (!Game.IsMobile)
             {
-                Vector2 point = ToPlayfield(input.Pointer);
-                storm.Target(point.X, point.Y);
+                _stormReturning = false;
+                Vector2 aim = ToPlayfield(input.Pointer);
+                storm.AimAt(aim.X, aim.Y);
+
+                if (input.PointerClicked)
+                    storm.Target(aim.X, aim.Y);
                 return;
             }
 
-            // A touch screen aims with the drag-and-tap controls instead: the crosshair follows
-            // the stick and a tap fires, which needs no absolute touch mapping.
-            _ = storm;
+            Vector2? raw = null;
+            foreach (TouchContact touch in input.Touches)
+            {
+                if (InHudButton(input, touch))
+                    continue;
+
+                raw = touch.Position;
+                break;
+            }
+
+            if (raw.HasValue)
+            {
+                if (_stormLastTouch == null)
+                {
+                    _stormAnchor = storm.Crosshair;
+                    _stormDragged = false;
+                }
+                else
+                {
+                    float scale = Math.Max(0.0001f, PlayfieldScale);
+                    Vector2 delta = (raw.Value - _stormLastTouch.Value) / scale;
+                    if (Math.Abs(delta.X) + Math.Abs(delta.Y) > 1.5f)
+                    {
+                        _stormDragged = true;
+                        storm.AimAt(storm.Crosshair.X + delta.X, storm.Crosshair.Y + delta.Y);
+                    }
+                }
+
+                _stormLastTouch = raw;
+                _stormReturning = false;
+                return;
+            }
+
+            if (_stormLastTouch != null)
+            {
+                // Finger lifted: a tap fires, a drag just lets the sight drift back.
+                if (!_stormDragged)
+                    storm.Target(storm.Crosshair.X, storm.Crosshair.Y);
+
+                _stormReturning = true;
+            }
+
+            _stormLastTouch = null;
+
+            if (!_stormReturning)
+                return;
+
+            Vector2 back = _stormAnchor - storm.Crosshair;
+            float step = StormReturnSpeed * (float)deltaSeconds;
+            if (back.Length() <= step)
+            {
+                storm.AimAt(_stormAnchor.X, _stormAnchor.Y);
+                _stormReturning = false;
+            }
+            else
+            {
+                Vector2 move = Vector2.Normalize(back) * step;
+                storm.AimAt(storm.Crosshair.X + move.X, storm.Crosshair.Y + move.Y);
+            }
         }
+
+        /// <summary>The harder the skill, the quicker the sight snaps back to where the drag began.</summary>
+        private float StormReturnSpeed => _skill switch
+        {
+            SkillLevel.Novice => 70f,
+            SkillLevel.Skilled => 130f,
+            SkillLevel.Veteran => 210f,
+            _ => 320f
+        };
+
+        private float PlayfieldScale =>
+            new PlayfieldView(PlayfieldArea, new System.Numerics.Vector2(ElektroStormGame.Width, ElektroStormGame.Height)).Scale;
 
         /// <summary>On a phone the game fills the screen; desktop keeps the framed board.</summary>
         private Rectangle PlayfieldArea => Game.IsMobile
@@ -255,6 +350,10 @@ namespace PSSCollection.Core.Screens
                 _lastTouchRaw = touching ? new Vector2(0, 0) : (Vector2?)null;
                 return new InputState(left, right, up, down, fire, pause, firePressed);
             }
+
+            // Elektro Storm aims its crosshair directly, so no stick input is built for it.
+            if (Game.IsMobile && _game is ElektroStormGame)
+                return new InputState(false, false, false, false, false, pause, false);
 
             if (Game.IsMobile)
             {
@@ -325,16 +424,12 @@ namespace PSSCollection.Core.Screens
                         }
                     }
 
-                    if (UsesFire && _game is not ElektroStormGame)
+                    if (UsesFire)
                         fire = true;
                 }
                 else
                 {
                     _steerHold = 0;
-
-                    // Missile Command spends a shot on a deliberate tap and nothing else.
-                    if (_game is ElektroStormGame && _tapCandidate)
-                        firePressed = true;
                 }
 
                 _tapCandidate = raw.HasValue && _steerHold <= 0;
@@ -459,6 +554,10 @@ namespace PSSCollection.Core.Screens
                 Canvas.Rect(PauseButton.X + 18, PauseButton.Y + 14, 7, 20, Palette.Text);
                 Canvas.Rect(PauseButton.X + 31, PauseButton.Y + 14, 7, 20, Palette.Text);
             }
+            else
+            {
+                Ui.Button(Canvas, MenuButton, "MENU", false, Palette.TextDim, 1.5f);
+            }
 
             float pulse = 0.4f + 0.3f * Ui.Pulse(time, 2.0);
             Canvas.Rect(40, 100, 1200, 2, Palette.WithAlpha(accent, pulse));
@@ -471,16 +570,12 @@ namespace PSSCollection.Core.Screens
             Canvas.TextCentred(Game.IsMobile ? "TAP TO RESUME OR QUIT" : "PRESS FIRE OR P TO RESUME",
                 new Rectangle(0, 366, 1280, 26), 2f, accent);
 
-            if (Game.IsMobile)
-            {
-                Ui.Button(Canvas, ResumeButton, "RESUME", true, accent, 2.6f);
-                Ui.Button(Canvas, QuitButton, "QUIT", true, Palette.Red, 2.6f);
-            }
-            else
-            {
-                Ui.Button(Canvas, ResumeButton, "RESUME", true, accent, 2.6f);
-                Canvas.TextCentred("ESC LEAVES THE GAME", new Rectangle(0, 500, 1280, 24), 1.8f, Palette.TextDim);
-            }
+            Ui.Button(Canvas, ResumeButton, "RESUME", true, accent, 2.6f);
+            Ui.Button(Canvas, QuitButton, "QUIT", true, Palette.Red, 2.6f);
+
+            if (!Game.IsMobile)
+                Canvas.TextCentred("CLICK A BUTTON OR PRESS ESC FOR THE MENU", new Rectangle(0, 500, 1280, 24), 1.6f,
+                    Palette.TextDim);
         }
 
         private void DrawGameOverOverlay(double time)
@@ -494,6 +589,13 @@ namespace PSSCollection.Core.Screens
         private void DrawTouchControls(double time)
         {
             float pulse = 0.5f + 0.2f * Ui.Pulse(time, 2.4);
+
+            if (_gameId == GameId.ElektroStorm)
+            {
+                Canvas.TextCentred("DRAG TO AIM    TAP TO FIRE", new Rectangle(0, 698, 1280, 18), 1.5f,
+                    Palette.WithAlpha(Palette.TextDim, 0.9f));
+                return;
+            }
 
             if (UsesTilt(_gameId))
             {
