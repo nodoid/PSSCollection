@@ -33,8 +33,8 @@ namespace PSSCollection.Core.Screens
         /// <summary>No game needs an on-screen fire pad any more: a tap on the field shoots.</summary>
         private bool UsesFire => false;
 
-        /// <summary>Invaders and Centipede steer by tilting the phone; a tap on the field fires.</summary>
-        private static bool UsesTilt(GameId id) => id is GameId.Invaders or GameId.Centipede;
+        /// <summary>Invaders, Centipede and Hopper steer by tilting the phone.</summary>
+        private static bool UsesTilt(GameId id) => id is GameId.Invaders or GameId.Centipede or GameId.Hopper;
 
         /// <summary>Touches that start on a HUD button belong to that button, never the game.</summary>
         private bool InHudButton(GameInput input, TouchContact touch)
@@ -104,6 +104,7 @@ namespace PSSCollection.Core.Screens
         private Vector2? _stormLastTouch;
         private bool _stormDragged;
         private bool _stormReturning;
+        private bool _hopArmed = true;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -335,6 +336,37 @@ namespace PSSCollection.Core.Screens
                 }
 
                 float tilt = Game.Platform.Tilt;
+                float pitch = Game.Platform.TiltY;
+
+                if (_gameId == GameId.Hopper)
+                {
+                    // A frog hops once per tilt: it has to come back level before the next hop.
+                    if (Math.Abs(tilt) < 0.10f && Math.Abs(pitch) < 0.15f)
+                        _hopArmed = true;
+
+                    if (_hopArmed && (Math.Abs(tilt) > 0.18f || Math.Abs(pitch) > 0.25f))
+                    {
+                        _hopArmed = false;
+                        if (Math.Abs(tilt) >= Math.Abs(pitch))
+                        {
+                            if (tilt < 0)
+                                left = true;
+                            else
+                                right = true;
+                        }
+                        else if (pitch < 0)
+                        {
+                            up = true;
+                        }
+                        else
+                        {
+                            down = true;
+                        }
+                    }
+
+                    return new InputState(left, right, up, down, false, pause, false);
+                }
+
                 if (tilt < -0.15f)
                     left = true;
                 else if (tilt > 0.15f)
@@ -343,7 +375,6 @@ namespace PSSCollection.Core.Screens
                 // Centipede can also be steered up and down the band by tipping the phone.
                 if (_gameId == GameId.Centipede)
                 {
-                    float pitch = Game.Platform.TiltY;
                     if (pitch < -0.25f)
                         up = true;
                     else if (pitch > 0.25f)
