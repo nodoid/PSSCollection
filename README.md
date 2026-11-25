@@ -50,6 +50,15 @@ The Ultra and OricMon are deliberately **not** included.
 There is no content pipeline: every graphic is drawn from primitives at runtime and every sound is
 synthesised, so the games build from source with no asset steps.
 
+## Documentation
+
+* [`docs/architecture.md`](docs/architecture.md) - the virtual canvas, the screen model, input, platform
+  services, persistence and audio, and where to add a game.
+* [`docs/games.md`](docs/games.md) - the five games as implemented, with their board sizes, scoring and
+  the skill table that tunes all of them.
+* [`docs/building.md`](docs/building.md) - building each head, the release pipeline, Mac App Store
+  signing and profiles, and how the store screenshots are produced.
+
 ## Building
 
 ```bash
