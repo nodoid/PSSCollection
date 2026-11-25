@@ -599,14 +599,25 @@ namespace PSSCollection.Core.Graphics
 
         private static void DrawAlien(ScreenCanvas canvas, Vector2 centre, float width, float height, int variant)
         {
-            Color colour = variant switch
+            // Low two bits pick the alien, bit two is the marching frame.
+            int type = variant & 3;
+            bool marching = (variant & 4) != 0;
+
+            Color colour = type switch
             {
                 0 => Palette.Green,
                 1 => Palette.Cyan,
                 _ => Palette.Amber
             };
 
-            switch (variant)
+            // Legs swing between the two poses so the formation looks alive as it steps.
+            float legTop = centre.Y + height * (marching ? 0.24f : 0.32f);
+            canvas.Line(new Vector2(centre.X - width * 0.20f, legTop), new Vector2(centre.X - width * 0.36f, legTop),
+                colour, 3f);
+            canvas.Line(new Vector2(centre.X + width * 0.20f, legTop), new Vector2(centre.X + width * 0.36f, legTop),
+                colour, 3f);
+
+            switch (type)
             {
                 case 0:
                     canvas.Circle(centre, width * 0.30f, colour);

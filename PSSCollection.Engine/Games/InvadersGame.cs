@@ -543,9 +543,14 @@ namespace PSSCollection.Engine.Games
             {
                 for (int column = 0; column < Columns; column++)
                 {
-                    if (_aliens[row, column])
-                        _entities.Add(new Entity(EntityKind.Alien, AlienPosition(row, column),
-                            new Vector2(AlienWidth, AlienHeight), row % 3));
+                    if (!_aliens[row, column])
+                        continue;
+
+                    // The low two bits are the alien type, bit two is the marching frame, so the
+                    // formation steps through two poses as it crosses the screen.
+                    int frame = (int)(Elapsed / 0.42) % 2;
+                    _entities.Add(new Entity(EntityKind.Alien, AlienPosition(row, column),
+                        new Vector2(AlienWidth, AlienHeight), (row % 3) | (frame << 2)));
                 }
             }
 

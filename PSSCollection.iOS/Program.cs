@@ -218,7 +218,9 @@ namespace PSSCollection.iOS
                 }
 
                 double roll = Math.Atan2(screenRight, screenUp);
-                _tilt = (float)Math.Clamp(roll / 0.30, -1.0, 1.0);
+
+                // Negated: tilting the phone right must send the ship right.
+                _tilt = -(float)Math.Clamp(roll / 0.30, -1.0, 1.0);
             });
         }
 

@@ -11,7 +11,7 @@ namespace PSSCollection.Core.Screens
     /// <summary>Runs one game, draws its HUD and hands the result to the high-score table.</summary>
     public sealed class PlayScreen : Screen
     {
-        private static readonly Rectangle PlayfieldArea = new Rectangle(40, 104, 1200, 500);
+        private static readonly Rectangle DesktopPlayfieldArea = new Rectangle(40, 104, 1200, 500);
         private static readonly Rectangle PauseButton = new Rectangle(1196, 20, 56, 48);
         private static readonly Rectangle ExitButton = new Rectangle(1128, 20, 56, 48);
         private static readonly Rectangle ResumeButton = new Rectangle(320, 412, 300, 62);
@@ -154,7 +154,12 @@ namespace PSSCollection.Core.Screens
             _ = storm;
         }
 
-        private static Vector2 ToPlayfield(Vector2 screen)
+        /// <summary>On a phone the game fills the screen; desktop keeps the framed board.</summary>
+        private Rectangle PlayfieldArea => Game.IsMobile
+            ? new Rectangle(0, 0, Graphics.ScreenCanvas.VirtualWidth, Graphics.ScreenCanvas.VirtualHeight)
+            : DesktopPlayfieldArea;
+
+        private Vector2 ToPlayfield(Vector2 screen)
         {
             var view = new PlayfieldView(PlayfieldArea,
                 new System.Numerics.Vector2(ElektroStormGame.Width, ElektroStormGame.Height));
@@ -326,7 +331,8 @@ namespace PSSCollection.Core.Screens
             if (_game.IsShowingMessage)
             {
                 float alpha = MathHelper.Clamp((float)_game.MessageTimer, 0f, 1f);
-                Canvas.TextCentredShadowed(_game.Message, new Rectangle(0, PlayfieldArea.Y + 28, 1280, 40), 3f,
+                Canvas.TextCentredShadowed(_game.Message,
+                    new Rectangle(0, Game.IsMobile ? 112 : PlayfieldArea.Y + 28, 1280, 40), 3f,
                     Palette.WithAlpha(Palette.Amber, alpha), Palette.WithAlpha(Palette.Black, alpha));
             }
 
@@ -344,7 +350,8 @@ namespace PSSCollection.Core.Screens
 
         private void DrawHud(GameInfo info, Color accent, double time)
         {
-            Canvas.Rect(0, 0, 1280, 96, new Color(8, 11, 22));
+            // On mobile the game runs underneath the HUD, so the bar is translucent there.
+            Canvas.Rect(0, 0, 1280, 96, Game.IsMobile ? new Color(8, 11, 22, 198) : new Color(8, 11, 22));
             Canvas.Rect(0, 94, 1280, 2, Palette.WithAlpha(accent, 0.55f));
 
             Canvas.TextShadowed(info.Title, new Vector2(40, 18), 3f, Palette.Text, Palette.Background);
