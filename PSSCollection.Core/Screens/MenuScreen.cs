@@ -217,6 +217,35 @@ namespace PSSCollection.Core.Screens
                 string hint = Game.IsMobile ? "TAP TO CHOOSE" : "FIRE TO PLAY";
                 Canvas.Text(hint, card.X + 158, card.Y + 136, 1.6f, Palette.WithAlpha(accent, 0.9f));
             }
+
+            // How the game is played, in the words that fit the machine it is running on.
+            Canvas.Text(ControlsHint(info.Id, Game.IsMobile), card.X + 18, card.Y + 166, 1.35f,
+                Palette.WithAlpha(selected ? accent : Palette.TextDim, 0.85f));
+        }
+
+        /// <summary>One short line of controls for a card, matching the device in hand.</summary>
+        private static string ControlsHint(GameId id, bool mobile)
+        {
+            if (mobile)
+            {
+                return id switch
+                {
+                    GameId.Invaders => "TILT TO STEER   TAP TO FIRE",
+                    GameId.Centipede => "TILT TO STEER   TAP TO FIRE",
+                    GameId.Hopper => "TILT TO HOP",
+                    GameId.ElektroStorm => "DRAG TO AIM   TAP TO FIRE",
+                    _ => "TILT TO TURN"
+                };
+            }
+
+            return id switch
+            {
+                GameId.Invaders => "ARROWS TO MOVE   SPACE TO FIRE",
+                GameId.Centipede => "ARROWS TO MOVE   SPACE TO FIRE",
+                GameId.Hopper => "ARROWS TO HOP   P TO PAUSE",
+                GameId.ElektroStorm => "MOUSE TO AIM   CLICK TO FIRE",
+                _ => "ARROWS TO TURN   P TO PAUSE"
+            };
         }
 
         private void DrawCreditsPanel()
