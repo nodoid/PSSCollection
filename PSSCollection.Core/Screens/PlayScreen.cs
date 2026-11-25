@@ -455,12 +455,7 @@ namespace PSSCollection.Core.Screens
             if (UsesTilt(_gameId))
             {
                 // Tilt steering: no direction pad at all, just the fire instruction.
-                Canvas.Circle(FireCentre, FireRadius, new Color(255, 255, 255, 18));
-                Canvas.CircleOutline(FireCentre, FireRadius, Palette.WithAlpha(Palette.Magenta, 0.5f), 3f);
-                Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24),
-                    2f, Palette.WithAlpha(Palette.Magenta, 0.9f));
-
-                // Just the fire pad: no steering hint or tilt readout over the playfield.
+                // Tilt steers and a tap anywhere fires, so nothing is drawn over the field.
                 return;
             }
 
