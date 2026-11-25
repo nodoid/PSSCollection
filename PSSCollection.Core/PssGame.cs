@@ -179,6 +179,7 @@ namespace PSSCollection.Core
         {
             double delta = Math.Min(gameTime.ElapsedGameTime.TotalSeconds, 0.1);
             ComputeDestination();
+            _input.PlatformTouchSpace = _platform.TouchSpace;
             _input.Update(_destination, (float)delta);
             _screen?.Update(delta, _input.Current);
             base.Update(gameTime);

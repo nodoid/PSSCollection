@@ -137,7 +137,6 @@ namespace PSSCollection.Core.Input
         private readonly List<TouchContact> _touches = new List<TouchContact>();
         private readonly List<TouchContact> _published = new List<TouchContact>();
 
-        private readonly Vector2 _platformTouchSpace;
         private readonly ITouchSource _touchSource;
         private float _maxTouchX;
         private float _maxTouchY;
@@ -153,13 +152,19 @@ namespace PSSCollection.Core.Input
         public InputManager(bool isMobile, Vector2 platformTouchSpace = default, ITouchSource touchSource = null)
         {
             IsMobile = isMobile;
-            _platformTouchSpace = platformTouchSpace;
+            PlatformTouchSpace = platformTouchSpace;
             _touchSource = touchSource;
             if (isMobile)
                 TouchPanel.EnabledGestures = GestureType.None;
         }
 
         public bool IsMobile { get; }
+
+        /// <summary>
+        /// Refresh this every frame: a platform can only report the size of its touch space once
+        /// its window exists, which is after the first input manager has been built.
+        /// </summary>
+        public Vector2 PlatformTouchSpace { get; set; }
 
         public GameInput Current { get; private set; }
 
@@ -295,8 +300,8 @@ namespace PSSCollection.Core.Input
             // Touch locations are reported in the panel's own space, which is points on iOS and
             // pixels elsewhere - not necessarily the back-buffer rect used for the mouse. Prefer
             // the size the platform reports, and widen it if touches exceed it.
-            float spaceWidth = _platformTouchSpace.X > 0 ? _platformTouchSpace.X : TouchPanel.DisplayWidth;
-            float spaceHeight = _platformTouchSpace.Y > 0 ? _platformTouchSpace.Y : TouchPanel.DisplayHeight;
+            float spaceWidth = PlatformTouchSpace.X > 0 ? PlatformTouchSpace.X : TouchPanel.DisplayWidth;
+            float spaceHeight = PlatformTouchSpace.Y > 0 ? PlatformTouchSpace.Y : TouchPanel.DisplayHeight;
 
             if (_maxTouchX > spaceWidth * 1.02f || _maxTouchY > spaceHeight * 1.02f)
             {
