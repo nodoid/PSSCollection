@@ -17,6 +17,8 @@ namespace PSSCollection.Core.Screens
             new Rectangle(120, 468, 1040, 92)
         };
 
+        private static readonly Rectangle BackButton = new Rectangle(1064, 22, 176, 48);
+
         private readonly GameId _gameId;
         private int _index = 1;
 
@@ -29,6 +31,13 @@ namespace PSSCollection.Core.Screens
 
         public override void Update(double deltaSeconds, GameInput input)
         {
+            if (Game.IsMobile && input.TouchPressedIn(BackButton))
+            {
+                Game.Audio.Play(SoundId.MenuSelect);
+                Go(new MenuScreen(Game));
+                return;
+            }
+
             for (int i = 0; i < Rows.Length; i++)
             {
                 if (Hover(input, Rows[i]) && input.PointerMoved)
@@ -67,6 +76,9 @@ namespace PSSCollection.Core.Screens
 
             Ui.Backdrop(Canvas, time, accent);
             Ui.Header(Canvas, info.Title, "CHOOSE SKILL", accent, time);
+
+            if (Game.IsMobile)
+                Ui.Button(Canvas, BackButton, "MENU", false, accent, 1.8f);
 
             for (int i = 0; i < Rows.Length; i++)
             {

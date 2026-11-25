@@ -13,6 +13,9 @@ namespace PSSCollection.Core.Screens
     {
         private static readonly Rectangle PlayfieldArea = new Rectangle(40, 104, 1200, 500);
         private static readonly Rectangle PauseButton = new Rectangle(1196, 20, 56, 48);
+        private static readonly Rectangle ExitButton = new Rectangle(1128, 20, 56, 48);
+        private static readonly Rectangle ResumeButton = new Rectangle(320, 412, 300, 62);
+        private static readonly Rectangle QuitButton = new Rectangle(660, 412, 300, 62);
 
         private static readonly Vector2 DpadCentre = new Vector2(168, 654);
         private const float DpadRadius = 78f;
@@ -71,6 +74,32 @@ namespace PSSCollection.Core.Screens
                 if (_finishedTimer >= 1.4)
                     Finish();
                 return;
+            }
+
+            if (Game.IsMobile)
+            {
+                // Leaving a game must be possible on a device with no keyboard: the HUD exit
+                // button, or QUIT on the pause panel.
+                if (input.TouchPressedIn(ExitButton))
+                {
+                    Game.Audio.Play(SoundId.MenuSelect);
+                    Go(new MenuScreen(Game));
+                    return;
+                }
+
+                if (_game.IsPaused && input.TouchPressedIn(ResumeButton))
+                {
+                    _game.IsPaused = false;
+                    Game.Audio.Play(SoundId.MenuSelect);
+                    return;
+                }
+
+                if (_game.IsPaused && input.TouchPressedIn(QuitButton))
+                {
+                    Game.Audio.Play(SoundId.MenuSelect);
+                    Go(new MenuScreen(Game));
+                    return;
+                }
             }
 
             bool pause = input.Pause;
@@ -161,6 +190,16 @@ namespace PSSCollection.Core.Screens
                     {
                         fire = true;
                         firePressed |= touch.Pressed;
+                        continue;
+                    }
+
+                    // A tap on the playfield also fires, so a phone player can shoot and steer
+                    // at the same time without hunting for the button.
+                    if (touch.Pressed && _game is not ElektroStormGame &&
+                        PlayfieldArea.Contains((int)touch.Position.X, (int)touch.Position.Y))
+                    {
+                        fire = true;
+                        firePressed = true;
                     }
                 }
             }
@@ -265,6 +304,13 @@ namespace PSSCollection.Core.Screens
 
             if (Game.IsMobile)
             {
+                Canvas.RoundedRect(ExitButton, Palette.WithAlpha(Palette.Red, 0.18f), 8);
+                Canvas.RoundedOutline(ExitButton, Palette.WithAlpha(Palette.Red, 0.55f), 8, 1);
+                Canvas.Line(new Vector2(ExitButton.X + 19, ExitButton.Y + 15),
+                    new Vector2(ExitButton.X + 37, ExitButton.Y + 33), Palette.Red, 3f);
+                Canvas.Line(new Vector2(ExitButton.X + 37, ExitButton.Y + 15),
+                    new Vector2(ExitButton.X + 19, ExitButton.Y + 33), Palette.Red, 3f);
+
                 Canvas.RoundedRect(PauseButton, Palette.WithAlpha(accent, 0.18f), 8);
                 Canvas.Rect(PauseButton.X + 18, PauseButton.Y + 14, 7, 20, Palette.Text);
                 Canvas.Rect(PauseButton.X + 31, PauseButton.Y + 14, 7, 20, Palette.Text);
@@ -278,11 +324,19 @@ namespace PSSCollection.Core.Screens
         {
             Canvas.Rect(ScreenCanvas.FullScreen, new Color(0, 0, 0, 200));
             Canvas.TextCentredShadowed("PAUSED", new Rectangle(0, 280, 1280, 70), 6f, Palette.Text, Palette.Black);
-            Canvas.TextCentred(Game.IsMobile ? "TAP THE FIRE BUTTON TO RESUME" : "PRESS FIRE OR P TO RESUME",
+            Canvas.TextCentred(Game.IsMobile ? "TAP TO RESUME OR QUIT" : "PRESS FIRE OR P TO RESUME",
                 new Rectangle(0, 366, 1280, 26), 2f, accent);
 
-            var resume = new Rectangle(490, 410, 300, 62);
-            Ui.Button(Canvas, resume, "RESUME", true, accent, 2.6f);
+            if (Game.IsMobile)
+            {
+                Ui.Button(Canvas, ResumeButton, "RESUME", true, accent, 2.6f);
+                Ui.Button(Canvas, QuitButton, "QUIT", true, Palette.Red, 2.6f);
+            }
+            else
+            {
+                Ui.Button(Canvas, ResumeButton, "RESUME", true, accent, 2.6f);
+                Canvas.TextCentred("ESC LEAVES THE GAME", new Rectangle(0, 500, 1280, 24), 1.8f, Palette.TextDim);
+            }
         }
 
         private void DrawGameOverOverlay(double time)

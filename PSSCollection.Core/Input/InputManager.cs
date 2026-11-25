@@ -264,6 +264,13 @@ namespace PSSCollection.Core.Input
             var current = new HashSet<int>();
             TouchCollection state = TouchPanel.GetState();
 
+            // Touch locations are reported in the panel's own space, which is points on iOS and
+            // pixels elsewhere - not necessarily the back-buffer rect used for the mouse. Mapping
+            // through DisplayWidth/Height is what makes the on-screen controls line up on a phone.
+            Rectangle space = destination;
+            if (TouchPanel.DisplayWidth > 0 && TouchPanel.DisplayHeight > 0)
+                space = new Rectangle(0, 0, TouchPanel.DisplayWidth, TouchPanel.DisplayHeight);
+
             foreach (TouchLocation location in state)
             {
                 if (location.State == TouchLocationState.Invalid)
@@ -271,7 +278,7 @@ namespace PSSCollection.Core.Input
 
                 current.Add(location.Id);
                 _touches.Add(new TouchContact(location.Id,
-                    ScreenToVirtual(location.Position, destination),
+                    ScreenToVirtual(location.Position, space),
                     !_previousTouches.Contains(location.Id)));
             }
 
@@ -280,14 +287,25 @@ namespace PSSCollection.Core.Input
                 _previousTouches.Add(id);
         }
 
-        /// <summary>Maps a back-buffer point onto the 1280x720 virtual canvas.</summary>
+        /// <summary>
+        /// Maps a point in some window space onto the 1280x720 virtual canvas, fitting the canvas
+        /// inside that space with letterbox bars on both axes.
+        /// </summary>
         public static Vector2 ScreenToVirtual(Vector2 point, Rectangle destination)
         {
             if (destination.Width <= 0 || destination.Height <= 0)
                 return point;
 
-            float scale = destination.Width / (float)Graphics.ScreenCanvas.VirtualWidth;
-            return new Vector2((point.X - destination.X) / scale, (point.Y - destination.Y) / scale);
+            const float virtualWidth = Graphics.ScreenCanvas.VirtualWidth;
+            const float virtualHeight = Graphics.ScreenCanvas.VirtualHeight;
+
+            float scale = Math.Min(destination.Width / virtualWidth, destination.Height / virtualHeight);
+            if (scale <= 0)
+                return point;
+
+            float offsetX = destination.X + (destination.Width - virtualWidth * scale) * 0.5f;
+            float offsetY = destination.Y + (destination.Height - virtualHeight * scale) * 0.5f;
+            return new Vector2((point.X - offsetX) / scale, (point.Y - offsetY) / scale);
         }
 
         private bool Held(Keys key) => _keys.IsKeyDown(key);

@@ -21,6 +21,8 @@ namespace PSSCollection.Core.Screens
             return new Rectangle(left + index * (width + gap), 116, width, 46);
         }
 
+        private static readonly Rectangle BackButton = new Rectangle(1064, 22, 176, 48);
+
         private int _gameIndex;
         private bool _clearArmed;
         private double _armedTimer;
@@ -39,6 +41,13 @@ namespace PSSCollection.Core.Screens
                 _armedTimer -= deltaSeconds;
                 if (_armedTimer <= 0)
                     _clearArmed = false;
+            }
+
+            if (Game.IsMobile && input.TouchPressedIn(BackButton))
+            {
+                Game.Audio.Play(SoundId.MenuSelect);
+                Go(new MenuScreen(Game));
+                return;
             }
 
             for (int i = 0; i < Catalogue.Count; i++)
@@ -97,6 +106,9 @@ namespace PSSCollection.Core.Screens
 
             Ui.Backdrop(Canvas, time, accent);
             Ui.Header(Canvas, "HIGH SCORES", info.Caption, accent, time);
+
+            if (Game.IsMobile)
+                Ui.Button(Canvas, BackButton, "MENU", false, accent, 1.8f);
 
             for (int i = 0; i < Catalogue.Count; i++)
             {
