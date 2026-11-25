@@ -12,17 +12,16 @@
 						<rect key="frame" x="0.0" y="0.0" width="844" height="390"/>
 						<autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
 						<subviews>
-							<label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="THE PSS ORIC COLLECTION" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="label-1">
-								<rect key="frame" x="222" y="184" width="400" height="22"/>
-								<fontDescription key="fontDescription" type="system" pointSize="16"/>
-								<color key="textColor" red="0.22" green="0.88" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-								<nil key="highlightedColor"/>
-							</label>
+							<imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" image="LaunchArt.png" translatesAutoresizingMaskIntoConstraints="NO" id="art-1">
+								<rect key="frame" x="0.0" y="0.0" width="844" height="390"/>
+							</imageView>
 						</subviews>
 						<color key="backgroundColor" red="0.02" green="0.03" blue="0.06" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
 						<constraints>
-							<constraint firstItem="label-1" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="c1"/>
-							<constraint firstItem="label-1" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="c2"/>
+							<constraint firstItem="art-1" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="c1"/>
+							<constraint firstItem="art-1" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="c2"/>
+							<constraint firstItem="art-1" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="c3"/>
+							<constraint firstItem="art-1" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="c4"/>
 						</constraints>
 					</view>
 				</viewController>
@@ -31,4 +30,7 @@
 			<point key="canvasLocation" x="53" y="375"/>
 		</scene>
 	</scenes>
+	<resources>
+		<image name="LaunchArt.png" width="2560" height="1440"/>
+	</resources>
 </document>

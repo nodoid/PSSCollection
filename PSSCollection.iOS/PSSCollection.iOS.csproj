@@ -33,5 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <BundleResource Include="AppIcon.xcassets\**\*" />
+    <!-- The launch storyboard shows this image while the game starts up. -->
+    <BundleResource Include="LaunchArt.png" />
   </ItemGroup>
 </Project>
