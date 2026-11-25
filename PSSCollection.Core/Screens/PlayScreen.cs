@@ -106,7 +106,7 @@ namespace PSSCollection.Core.Screens
         private bool _stormDragged;
         private bool _stormReturning;
         private double _tiltHopCooldown;
-        private bool _tiltTurnArmed = true;
+        private double _tiltTurnCooldown;
         private string _tiltReadout = string.Empty;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
@@ -383,14 +383,14 @@ namespace PSSCollection.Core.Screens
 
                 if (_gameId == GameId.LightCycle)
                 {
-                    // One turn per lean: the phone has to come back level before the next turn,
-                    // otherwise a held tilt would bank the bike at every corner it could.
-                    if (leanX < 0.5f && leanY < 0.5f)
-                        _tiltTurnArmed = true;
+                    // A turn every third of a second while the phone stays tipped. The bike ignores
+                    // turns it cannot make - it will not reverse into itself - so a held lean simply
+                    // takes the next corner it can.
+                    _tiltTurnCooldown -= deltaSeconds;
 
-                    if (_tiltTurnArmed && (leanX > 1f || leanY > 1f))
+                    if (_tiltTurnCooldown <= 0 && (leanX > 1f || leanY > 1f))
                     {
-                        _tiltTurnArmed = false;
+                        _tiltTurnCooldown = 0.35;
                         if (leanX >= leanY)
                         {
                             if (tilt < 0)
