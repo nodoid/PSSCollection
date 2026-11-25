@@ -240,7 +240,8 @@ namespace PSSCollection.iOS
                     _baseUp = _sumUp / _samples;
                 }
 
-                _tilt = (float)Math.Clamp((screenRight - _baseRight) / 0.30, -1.0, 1.0);
+                // Negated: leaning the phone right must steer right.
+                _tilt = -(float)Math.Clamp((screenRight - _baseRight) / 0.30, -1.0, 1.0);
                 _tiltY = (float)Math.Clamp((screenUp - _baseUp) / 0.30, -1.0, 1.0);
             });
         }
