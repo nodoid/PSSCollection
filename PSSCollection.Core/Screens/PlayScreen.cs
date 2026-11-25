@@ -212,19 +212,26 @@ namespace PSSCollection.Core.Screens
                         else
                         {
                             // With a finger down but not yet moving, steer from where it is on the
-                            // screen: left third goes left, right third goes right, and so on.
-                            float nx = input.TouchSpaceWidth > 0 ? touch.Raw.X / input.TouchSpaceWidth : 0.5f;
-                            float ny = input.TouchSpaceHeight > 0 ? touch.Raw.Y / input.TouchSpaceHeight : 0.5f;
+                            // screen. One direction at a time - the dominant axis - so games that
+                            // hop or step one way per press (Hopper, Centipede) get four clean
+                            // directions instead of a diagonal.
+                            float nx = (input.TouchSpaceWidth > 0 ? touch.Raw.X / input.TouchSpaceWidth : 0.5f) - 0.5f;
+                            float ny = (input.TouchSpaceHeight > 0 ? touch.Raw.Y / input.TouchSpaceHeight : 0.5f) - 0.5f;
 
-                            if (nx < 0.4f)
-                                left = true;
-                            else if (nx > 0.6f)
-                                right = true;
-
-                            if (ny < 0.35f)
-                                up = true;
-                            else if (ny > 0.65f)
-                                down = true;
+                            if (Math.Abs(nx) >= Math.Abs(ny))
+                            {
+                                if (nx < -0.05f)
+                                    left = true;
+                                else if (nx > 0.05f)
+                                    right = true;
+                            }
+                            else
+                            {
+                                if (ny < -0.05f)
+                                    up = true;
+                                else if (ny > 0.05f)
+                                    down = true;
+                            }
                         }
 
                         continue;
