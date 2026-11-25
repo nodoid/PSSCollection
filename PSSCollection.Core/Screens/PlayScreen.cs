@@ -30,11 +30,11 @@ namespace PSSCollection.Core.Screens
 
         private const float TouchMoveThreshold = 2.5f;
 
-        /// <summary>Hopper and Light Cycle never shoot, so their touch layout has no fire button.</summary>
-        private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede;
+        /// <summary>No game needs an on-screen fire pad any more: a tap on the field shoots.</summary>
+        private bool UsesFire => false;
 
-        /// <summary>Invaders steers by tilting the phone; tapping the screen still fires.</summary>
-        private static bool UsesTilt(GameId id) => id == GameId.Invaders;
+        /// <summary>Invaders and Centipede steer by tilting the phone; a tap on the field fires.</summary>
+        private static bool UsesTilt(GameId id) => id is GameId.Invaders or GameId.Centipede;
 
         /// <summary>Touches that start on a HUD button belong to that button, never the game.</summary>
         private bool InHudButton(GameInput input, TouchContact touch)
@@ -339,6 +339,16 @@ namespace PSSCollection.Core.Screens
                     left = true;
                 else if (tilt > 0.15f)
                     right = true;
+
+                // Centipede can also be steered up and down the band by tipping the phone.
+                if (_gameId == GameId.Centipede)
+                {
+                    float pitch = Game.Platform.TiltY;
+                    if (pitch < -0.25f)
+                        up = true;
+                    else if (pitch > 0.25f)
+                        down = true;
+                }
 
                 if (touching)
                 {

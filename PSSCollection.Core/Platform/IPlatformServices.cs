@@ -30,6 +30,12 @@ namespace PSSCollection.Core.Platform
         /// </summary>
         float Tilt { get; }
 
+        /// <summary>
+        /// Device pitch for vertical tilt steering: -1 tilted away, 0 level, +1 tilted towards the
+        /// player. Always 0 on a platform without a motion sensor.
+        /// </summary>
+        float TiltY { get; }
+
         void Quit(Game game);
 
         void SetOrientation(Game game, bool portrait);
@@ -60,6 +66,8 @@ namespace PSSCollection.Core.Platform
         public virtual Input.ITouchSource TouchSource => null;
 
         public virtual float Tilt => 0f;
+
+        public virtual float TiltY => 0f;
 
         public virtual void Quit(Game game) => game.Exit();
 

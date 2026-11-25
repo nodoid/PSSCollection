@@ -178,11 +178,14 @@ namespace PSSCollection.iOS
         private readonly IosTouchSource _touches = new IosTouchSource();
         private readonly CMMotionManager _motion = new CMMotionManager();
         private float _tilt;
+        private float _tiltY;
         private UIWindow _window;
 
         public override ITouchSource TouchSource => _touches;
 
         public override float Tilt => _tilt;
+
+        public override float TiltY => _tiltY;
 
         /// <summary>Starts accelerometer updates and turns device roll into a -1..1 steering value.</summary>
         public void Start(UIWindow window)
@@ -221,6 +224,12 @@ namespace PSSCollection.iOS
 
                 // Negated: tilting the phone right must send the ship right.
                 _tilt = -(float)Math.Clamp(roll / 0.30, -1.0, 1.0);
+
+                // Pitch: the part of gravity pointing out of the screen grows as the top edge is
+                // tipped away, which gives a second steering axis for games that need one.
+                double inPlane = Math.Max(0.25, Math.Sqrt(screenRight * screenRight + screenUp * screenUp));
+                double pitch = Math.Atan2(a.Z, inPlane);
+                _tiltY = (float)Math.Clamp(pitch / 0.30, -1.0, 1.0);
             });
         }
 
