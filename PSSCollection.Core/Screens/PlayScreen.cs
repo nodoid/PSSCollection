@@ -301,9 +301,13 @@ namespace PSSCollection.Core.Screens
         private float PlayfieldScale =>
             new PlayfieldView(PlayfieldArea, new System.Numerics.Vector2(ElektroStormGame.Width, ElektroStormGame.Height)).Scale;
 
-        /// <summary>On a phone the game fills the screen; desktop keeps the framed board.</summary>
+        /// <summary>
+        /// On a phone the board fills the width of the screen below the HUD strip, so the top of a
+        /// game - home bays, hatching centipedes, the top alien row - is never hidden behind the
+        /// header. Desktop keeps its framed board.
+        /// </summary>
         private Rectangle PlayfieldArea => Game.IsMobile
-            ? new Rectangle(0, 0, Graphics.ScreenCanvas.VirtualWidth, Graphics.ScreenCanvas.VirtualHeight)
+            ? new Rectangle(0, 96, Graphics.ScreenCanvas.VirtualWidth, Graphics.ScreenCanvas.VirtualHeight - 96)
             : DesktopPlayfieldArea;
 
         private Vector2 ToPlayfield(Vector2 screen)
