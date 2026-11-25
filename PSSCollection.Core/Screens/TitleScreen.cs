@@ -51,8 +51,8 @@ namespace PSSCollection.Core.Screens
                 Palette.Text, Palette.Background);
 
             Canvas.Rect(340, 400, 600, 2, Palette.WithAlpha(Palette.Cyan, 0.3f));
-            Canvas.TextCentred("FIVE ARCADE CLASSICS FROM PERSONAL SOFTWARE SERVICES", new Rectangle(0, 410, 1280, 24), 1.9f,
-                Palette.TextDim);
+            Canvas.TextCentred("5 CLASSIC ORIC GAMES BASED ON THE PSS ORIGINALS", new Rectangle(0, 410, 1280, 24),
+                1.9f, Palette.TextDim);
 
             var titles = new System.Text.StringBuilder();
             foreach (GameInfo info in Catalogue.All)
