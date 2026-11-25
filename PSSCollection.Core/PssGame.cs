@@ -159,7 +159,7 @@ namespace PSSCollection.Core
             Canvas = new ScreenCanvas(GraphicsDevice, _spriteBatch);
             _target = new RenderTarget2D(GraphicsDevice, ScreenCanvas.VirtualWidth, ScreenCanvas.VirtualHeight,
                 false, SurfaceFormat.Color, DepthFormat.None);
-            _input = new InputManager(_platform.IsMobile);
+            _input = new InputManager(_platform.IsMobile, _platform.TouchSpace);
             Audio = new SoundBank();
 
             Navigate(new TitleScreen(this));

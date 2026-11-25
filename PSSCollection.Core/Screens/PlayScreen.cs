@@ -27,7 +27,7 @@ namespace PSSCollection.Core.Screens
         private readonly IGame _game;
         private readonly List<SoundId> _pendingSounds = new List<SoundId>();
 
-        private const float StickDeadZone = 14f;
+        private const float TouchMoveThreshold = 2.5f;
 
         /// <summary>Hopper and Light Cycle never shoot, so their touch layout has no fire button.</summary>
         private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede or GameId.ElektroStorm;
@@ -35,9 +35,11 @@ namespace PSSCollection.Core.Screens
         private double _finishedTimer;
         private bool _finished;
         private int _bestBefore;
-        private int _stickId = -1;
-        private Vector2 _stickAnchor;
-        private bool _stickMoved;
+        private Vector2? _lastTouchRaw;
+        private double _steerHold;
+        private int _steerX;
+        private int _steerY;
+        private bool _tapCandidate;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -118,7 +120,7 @@ namespace PSSCollection.Core.Screens
 
             AimStormIfPointer(input);
 
-            InputState state = BuildPlayerInput(input, pause);
+            InputState state = BuildPlayerInput(deltaSeconds, input, pause);
             _game.Update(deltaSeconds, state);
 
             PlaySounds();
@@ -156,7 +158,7 @@ namespace PSSCollection.Core.Screens
             return new Vector2((screen.X - view.Offset.X) / view.Scale, (screen.Y - view.Offset.Y) / view.Scale);
         }
 
-        private InputState BuildPlayerInput(GameInput input, bool pause)
+        private InputState BuildPlayerInput(double deltaSeconds, GameInput input, bool pause)
         {
             bool left = input.Player.Left;
             bool right = input.Player.Right;
@@ -167,74 +169,84 @@ namespace PSSCollection.Core.Screens
 
             if (Game.IsMobile)
             {
-                bool stickSeen = false;
-
-                // Steering is a relative drag, not a fixed on-screen button. A drag gives the
-                // same directions whatever space the platform reports touches in, while an
-                // absolute hit test depends on that space matching the canvas exactly.
+                Vector2? raw = null;
                 foreach (TouchContact touch in input.Touches)
                 {
-                    if (_stickId < 0 && touch.Pressed)
+                    raw = touch.Raw;
+                    break;
+                }
+
+                // Steering follows frame-to-frame movement of the finger. Comparing successive
+                // positions needs no anchoring and no stable touch id, which is what made the
+                // earlier drag scheme dead on a real device.
+                if (raw.HasValue && _lastTouchRaw.HasValue)
+                {
+                    Vector2 delta = raw.Value - _lastTouchRaw.Value;
+                    if (Math.Abs(delta.X) > TouchMoveThreshold || Math.Abs(delta.Y) > TouchMoveThreshold)
                     {
-                        _stickId = touch.Id;
-                        _stickAnchor = touch.Raw;
-                        _stickMoved = false;
-                    }
-
-                    if (touch.Id == _stickId)
-                    {
-                        stickSeen = true;
-                        Vector2 delta = touch.Raw - _stickAnchor;
-                        bool dragged = Math.Abs(delta.X) > StickDeadZone || Math.Abs(delta.Y) > StickDeadZone;
-
-                        if (dragged)
-                            _stickMoved = true;
-
-                        if (dragged)
+                        if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
                         {
-                            if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
-                            {
-                                if (delta.X < -StickDeadZone)
-                                    left = true;
-                                else if (delta.X > StickDeadZone)
-                                    right = true;
-                            }
-                            else
-                            {
-                                if (delta.Y < -StickDeadZone)
-                                    up = true;
-                                else if (delta.Y > StickDeadZone)
-                                    down = true;
-                            }
+                            _steerX = Math.Sign(delta.X);
+                            _steerY = 0;
                         }
                         else
                         {
-                            // A finger that is down but not moving steers nowhere: absolute
-                            // screen position is not trustworthy on every platform, and a press
-                            // must never turn into a shot.
-                            fire = false;
+                            _steerX = 0;
+                            _steerY = Math.Sign(delta.Y);
                         }
 
-                        continue;
-                    }
-
-                    if (UsesFire && Vector2.Distance(touch.Position, FireCentre) <= FireRadius)
-                    {
-                        fire = true;
-                        firePressed |= touch.Pressed;
+                        _steerHold = 0.22;
+                        _tapCandidate = false;
                     }
                 }
 
-                if (!stickSeen && _stickId >= 0)
+                if (raw.HasValue)
                 {
-                    // Missile Command fires on a deliberate tap; elsewhere holding the stick
-                    // already fires, so a press never turns into a shot by itself.
-                    if (!_stickMoved && _game is ElektroStormGame)
-                        firePressed = true;
+                    if (_steerHold > 0)
+                    {
+                        _steerHold -= deltaSeconds;
+                        left = _steerX < 0;
+                        right = _steerX > 0;
+                        up = _steerY < 0;
+                        down = _steerY > 0;
+                    }
+                    else
+                    {
+                        // Standing finger: fall back to where it is on the screen, measured
+                        // against the space the device has actually used.
+                        float nx = input.TouchSpaceWidth > 0 ? raw.Value.X / input.TouchSpaceWidth : 0.5f;
+                        float ny = input.TouchSpaceHeight > 0 ? raw.Value.Y / input.TouchSpaceHeight : 0.5f;
 
-                    _stickId = -1;
-                    _stickMoved = false;
+                        if (Math.Abs(nx - 0.5f) >= Math.Abs(ny - 0.5f))
+                        {
+                            if (nx < 0.45f)
+                                left = true;
+                            else if (nx > 0.55f)
+                                right = true;
+                        }
+                        else
+                        {
+                            if (ny < 0.45f)
+                                up = true;
+                            else if (ny > 0.55f)
+                                down = true;
+                        }
+                    }
+
+                    if (UsesFire && _game is not ElektroStormGame)
+                        fire = true;
                 }
+                else
+                {
+                    _steerHold = 0;
+
+                    // Missile Command spends a shot on a deliberate tap and nothing else.
+                    if (_game is ElektroStormGame && _tapCandidate)
+                        firePressed = true;
+                }
+
+                _tapCandidate = raw.HasValue && _steerHold <= 0;
+                _lastTouchRaw = raw;
             }
 
             return new InputState(left, right, up, down, fire, pause, firePressed);

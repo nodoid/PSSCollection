@@ -15,6 +15,12 @@ namespace PSSCollection.Core.Platform
         /// <summary>Shown on the title screen.</summary>
         string PlatformName { get; }
 
+        /// <summary>
+        /// Size of the space the platform reports touch positions in, when it knows it. Zero means
+        /// "work it out from the touch panel", which is what the desktop heads do.
+        /// </summary>
+        Vector2 TouchSpace { get; }
+
         void Quit(Game game);
 
         void SetOrientation(Game game, bool portrait);
@@ -39,6 +45,8 @@ namespace PSSCollection.Core.Platform
         public virtual string PlatformName => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en"
             ? "WINDOWS"
             : "DESKTOP";
+
+        public virtual Vector2 TouchSpace => Vector2.Zero;
 
         public virtual void Quit(Game game) => game.Exit();
 

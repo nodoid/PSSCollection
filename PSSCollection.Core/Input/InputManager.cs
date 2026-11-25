@@ -137,8 +137,11 @@ namespace PSSCollection.Core.Input
         private readonly List<TouchContact> _touches = new List<TouchContact>();
         private readonly List<TouchContact> _published = new List<TouchContact>();
 
+        private readonly Vector2 _platformTouchSpace;
         private float _maxTouchX;
         private float _maxTouchY;
+        private float _spaceWidth;
+        private float _spaceHeight;
 
         private float _horizontalTimer;
         private float _verticalTimer;
@@ -146,9 +149,10 @@ namespace PSSCollection.Core.Input
         private int _verticalDirection;
         private bool _hasDirectionTimer;
 
-        public InputManager(bool isMobile)
+        public InputManager(bool isMobile, Vector2 platformTouchSpace = default)
         {
             IsMobile = isMobile;
+            _platformTouchSpace = platformTouchSpace;
             if (isMobile)
                 TouchPanel.EnabledGestures = GestureType.None;
         }
@@ -276,11 +280,8 @@ namespace PSSCollection.Core.Input
             _published.Clear();
             _published.AddRange(_touches);
 
-            float spaceWidth = Math.Max(TouchPanel.DisplayWidth, _maxTouchX);
-            float spaceHeight = Math.Max(TouchPanel.DisplayHeight, _maxTouchY);
-
             Current = new GameInput(horizontal, vertical, confirm, back, pause, highScores, clear, pointer,
-                pointerMoved, pointerClicked, player, _published, spaceWidth, spaceHeight);
+                pointerMoved, pointerClicked, player, _published, _spaceWidth, _spaceHeight);
         }
 
         private void UpdateTouches(Rectangle destination)
@@ -290,11 +291,23 @@ namespace PSSCollection.Core.Input
             TouchCollection state = TouchPanel.GetState();
 
             // Touch locations are reported in the panel's own space, which is points on iOS and
-            // pixels elsewhere - not necessarily the back-buffer rect used for the mouse. Mapping
-            // through DisplayWidth/Height is what makes the on-screen controls line up on a phone.
-            Rectangle space = destination;
-            if (TouchPanel.DisplayWidth > 0 && TouchPanel.DisplayHeight > 0)
-                space = new Rectangle(0, 0, TouchPanel.DisplayWidth, TouchPanel.DisplayHeight);
+            // pixels elsewhere - not necessarily the back-buffer rect used for the mouse. Prefer
+            // the size the platform reports, and widen it if touches exceed it.
+            float spaceWidth = _platformTouchSpace.X > 0 ? _platformTouchSpace.X : TouchPanel.DisplayWidth;
+            float spaceHeight = _platformTouchSpace.Y > 0 ? _platformTouchSpace.Y : TouchPanel.DisplayHeight;
+
+            if (_maxTouchX > spaceWidth * 1.02f || _maxTouchY > spaceHeight * 1.02f)
+            {
+                spaceWidth = Math.Max(_maxTouchX, spaceWidth);
+                spaceHeight = Math.Max(_maxTouchY, spaceHeight);
+            }
+
+            _spaceWidth = spaceWidth;
+            _spaceHeight = spaceHeight;
+
+            Rectangle space = spaceWidth > 0 && spaceHeight > 0
+                ? new Rectangle(0, 0, (int)Math.Ceiling(spaceWidth), (int)Math.Ceiling(spaceHeight))
+                : destination;
 
             foreach (TouchLocation location in state)
             {

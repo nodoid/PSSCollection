@@ -81,6 +81,23 @@ namespace PSSCollection.iOS
 
         public override string PlatformName => "IPHONE / IPAD";
 
+        /// <summary>
+        /// The game view's size in points - the space iOS reports touches in. Reading it from the
+        /// window avoids guessing whether the panel counts points, pixels or back-buffer units.
+        /// </summary>
+        public override Vector2 TouchSpace
+        {
+            get
+            {
+#pragma warning disable CA1422
+                UIWindow window = UIApplication.SharedApplication.Windows.FirstOrDefault(w => w.RootViewController != null);
+#pragma warning restore CA1422
+                return window == null
+                    ? Vector2.Zero
+                    : new Vector2((float)window.Bounds.Width, (float)window.Bounds.Height);
+            }
+        }
+
         /// <summary>Library/Application Support - private to the app and backed up.</summary>
         public override string DataDirectory =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PSSCollection");
