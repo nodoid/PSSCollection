@@ -27,9 +27,14 @@ namespace PSSCollection.Core.Screens
         private readonly IGame _game;
         private readonly List<SoundId> _pendingSounds = new List<SoundId>();
 
+        private const float StickDeadZone = 14f;
+
         private double _finishedTimer;
         private bool _finished;
         private int _bestBefore;
+        private int _stickId = -1;
+        private Vector2 _stickAnchor;
+        private bool _stickMoved;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -136,21 +141,9 @@ namespace PSSCollection.Core.Screens
                 return;
             }
 
-            if (!Game.IsMobile)
-                return;
-
-            foreach (TouchContact touch in input.Touches)
-            {
-                if (!touch.Pressed)
-                    continue;
-                if (Vector2.Distance(touch.Position, DpadCentre) <= DpadRadius ||
-                    Vector2.Distance(touch.Position, FireCentre) <= FireRadius)
-                    continue;
-
-                Vector2 point = ToPlayfield(touch.Position);
-                storm.Target(point.X, point.Y);
-                break;
-            }
+            // A touch screen aims with the drag-and-tap controls instead: the crosshair follows
+            // the stick and a tap fires, which needs no absolute touch mapping.
+            _ = storm;
         }
 
         private static Vector2 ToPlayfield(Vector2 screen)
@@ -171,36 +164,69 @@ namespace PSSCollection.Core.Screens
 
             if (Game.IsMobile)
             {
+                bool stickSeen = false;
+
+                // Steering is a relative drag, not a fixed on-screen button. A drag gives the
+                // same directions whatever space the platform reports touches in, while an
+                // absolute hit test depends on that space matching the canvas exactly.
                 foreach (TouchContact touch in input.Touches)
                 {
-                    if (Vector2.Distance(touch.Position, DpadCentre) <= DpadRadius)
+                    if (_stickId < 0 && touch.Pressed)
                     {
-                        Vector2 offset = touch.Position - DpadCentre;
-                        if (offset.X < -22)
-                            left = true;
-                        if (offset.X > 22)
-                            right = true;
-                        if (offset.Y < -22)
-                            up = true;
-                        if (offset.Y > 22)
-                            down = true;
+                        _stickId = touch.Id;
+                        _stickAnchor = touch.Raw;
+                        _stickMoved = false;
+                    }
+
+                    if (touch.Id == _stickId)
+                    {
+                        stickSeen = true;
+                        Vector2 delta = touch.Raw - _stickAnchor;
+
+                        if (Math.Abs(delta.X) > StickDeadZone || Math.Abs(delta.Y) > StickDeadZone)
+                            _stickMoved = true;
+
+                        // Holding the stick keeps the guns going, except where every shot is
+                        // rationed (Missile Command) and should be a deliberate tap.
+                        if (_game is not ElektroStormGame)
+                            fire = true;
+
+                        if (Math.Abs(delta.X) >= Math.Abs(delta.Y))
+                        {
+                            if (delta.X < -StickDeadZone)
+                                left = true;
+                            else if (delta.X > StickDeadZone)
+                                right = true;
+                        }
+                        else
+                        {
+                            if (delta.Y < -StickDeadZone)
+                                up = true;
+                            else if (delta.Y > StickDeadZone)
+                                down = true;
+                        }
+
+                        continue;
                     }
 
                     if (Vector2.Distance(touch.Position, FireCentre) <= FireRadius)
                     {
                         fire = true;
                         firePressed |= touch.Pressed;
-                        continue;
                     }
+                }
 
-                    // A tap on the playfield also fires, so a phone player can shoot and steer
-                    // at the same time without hunting for the button.
-                    if (touch.Pressed && _game is not ElektroStormGame &&
-                        PlayfieldArea.Contains((int)touch.Position.X, (int)touch.Position.Y))
+                if (!stickSeen && _stickId >= 0)
+                {
+                    // A finger lifted without dragging is a tap, which fires.
+                    if (!_stickMoved)
                     {
                         fire = true;
                         firePressed = true;
                     }
+
+                    _stickId = -1;
+                    _stickMoved = false;
                 }
             }
 
@@ -365,6 +391,9 @@ namespace PSSCollection.Core.Screens
             Canvas.Circle(FireCentre, FireRadius * 0.62f, Palette.WithAlpha(Palette.Magenta, 0.16f));
             Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24), 2f,
                 Palette.WithAlpha(Palette.Magenta, 0.9f));
+
+            Canvas.TextCentred("DRAG TO MOVE, ANYWHERE    TAP TO FIRE", new Rectangle(0, 600, 1280, 22), 1.6f,
+                Palette.WithAlpha(Palette.TextDim, 0.85f));
         }
     }
 }

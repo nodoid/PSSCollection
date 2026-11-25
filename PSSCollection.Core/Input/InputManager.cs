@@ -10,12 +10,19 @@ namespace PSSCollection.Core.Input
     /// <summary>A finger on the screen, in virtual pixels.</summary>
     public readonly struct TouchContact
     {
-        public TouchContact(int id, Vector2 position, bool pressed)
+        public TouchContact(int id, Vector2 position, Vector2 raw, bool pressed)
         {
             Id = id;
             Position = position;
+            Raw = raw;
             Pressed = pressed;
         }
+
+        /// <summary>
+        /// The point exactly as the device reported it, before any mapping. Relative gestures use
+        /// this because deltas stay correct whatever coordinate space a platform uses.
+        /// </summary>
+        public Vector2 Raw { get; }
 
         public int Id { get; }
 
@@ -279,6 +286,7 @@ namespace PSSCollection.Core.Input
                 current.Add(location.Id);
                 _touches.Add(new TouchContact(location.Id,
                     ScreenToVirtual(location.Position, space),
+                    location.Position,
                     !_previousTouches.Contains(location.Id)));
             }
 
