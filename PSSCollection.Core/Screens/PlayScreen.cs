@@ -35,6 +35,14 @@ namespace PSSCollection.Core.Screens
         /// <summary>Invaders steers by tilting the phone; tapping the screen still fires.</summary>
         private static bool UsesTilt(GameId id) => id == GameId.Invaders;
 
+        /// <summary>Touches that start on a HUD button belong to that button, never the game.</summary>
+        private static bool InHudButton(Vector2 point)
+        {
+            int x = (int)point.X;
+            int y = (int)point.Y;
+            return ExitButton.Contains(x, y) || PauseButton.Contains(x, y);
+        }
+
         private double _finishedTimer;
         private bool _finished;
         private int _bestBefore;
@@ -177,7 +185,16 @@ namespace PSSCollection.Core.Screens
 
             if (Game.IsMobile && UsesTilt(_gameId))
             {
-                bool touching = input.Touches.Count > 0;
+                // Only taps on the playfield fire: the HUD buttons must never shoot.
+                bool touching = false;
+                foreach (TouchContact touch in input.Touches)
+                {
+                    if (InHudButton(touch.Position))
+                        continue;
+
+                    touching = true;
+                    break;
+                }
 
                 float tilt = Game.Platform.Tilt;
                 if (tilt < -0.15f)
@@ -201,6 +218,9 @@ namespace PSSCollection.Core.Screens
                 Vector2? raw = null;
                 foreach (TouchContact touch in input.Touches)
                 {
+                    if (InHudButton(touch.Position))
+                        continue;
+
                     raw = touch.Raw;
                     break;
                 }
@@ -331,8 +351,10 @@ namespace PSSCollection.Core.Screens
             if (_game.IsShowingMessage)
             {
                 float alpha = MathHelper.Clamp((float)_game.MessageTimer, 0f, 1f);
+                // Full-screen play puts the alien rows right under the HUD, so mobile shows the
+                // message in the empty middle of the field instead.
                 Canvas.TextCentredShadowed(_game.Message,
-                    new Rectangle(0, Game.IsMobile ? 112 : PlayfieldArea.Y + 28, 1280, 40), 3f,
+                    new Rectangle(0, Game.IsMobile ? 400 : PlayfieldArea.Y + 28, 1280, 40), 3f,
                     Palette.WithAlpha(Palette.Amber, alpha), Palette.WithAlpha(Palette.Black, alpha));
             }
 
@@ -367,12 +389,15 @@ namespace PSSCollection.Core.Screens
             int best = Math.Max(_bestBefore, _game.Score);
             Canvas.TextCentred("BEST " + Ui.FormatScore(best), new Rectangle(400, 74, 480, 18), 1.5f, Palette.TextDim);
 
-            Canvas.TextRight("WAVE " + _game.Level, new Rectangle(820, 20, 300, 26), 2.6f, accent);
-            Canvas.TextRight("LIVES", new Rectangle(820, 56, 300, 18), 1.5f, Palette.TextDim);
+            // On mobile the exit and pause buttons own the top right corner, so wave and
+            // lives stop short of them instead of running underneath.
+            int hudRight = Game.IsMobile ? 1076 : 1120;
+            Canvas.TextRight("WAVE " + _game.Level, new Rectangle(hudRight - 300, 20, 300, 26), 2.6f, accent);
+            Canvas.TextRight("LIVES", new Rectangle(hudRight - 300, 56, 300, 18), 1.5f, Palette.TextDim);
 
             for (int i = 0; i < Math.Min(_game.Lives, 6); i++)
             {
-                float x = 1120 - i * 34;
+                float x = hudRight - i * 34;
                 Canvas.Line(new Vector2(x, 86), new Vector2(x - 10, 66), Palette.Green, 3f);
                 Canvas.Line(new Vector2(x, 86), new Vector2(x + 10, 66), Palette.Green, 3f);
                 Canvas.Line(new Vector2(x - 10, 66), new Vector2(x + 10, 66), Palette.Cyan, 2.5f);
@@ -435,14 +460,7 @@ namespace PSSCollection.Core.Screens
                 Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24),
                     2f, Palette.WithAlpha(Palette.Magenta, 0.9f));
 
-                float level = Math.Clamp(Game.Platform.Tilt, -1f, 1f);
-                var gauge = new Rectangle(440, 638, 400, 12);
-                Canvas.RoundedRect(gauge, Palette.WithAlpha(Palette.TextDim, 0.25f), 6);
-                float knob = gauge.X + (level + 1f) * 0.5f * gauge.Width;
-                Canvas.Circle(new Vector2(knob, gauge.Y + 6), 9, Palette.WithAlpha(Palette.Green, pulse + 0.3f));
-
-                Canvas.TextCentred("TILT TO STEER    TAP TO FIRE", new Rectangle(0, 600, 1280, 22), 1.7f,
-                    Palette.WithAlpha(Palette.TextDim, 0.9f));
+                // Just the fire pad: no steering hint or tilt readout over the playfield.
                 return;
             }
 
