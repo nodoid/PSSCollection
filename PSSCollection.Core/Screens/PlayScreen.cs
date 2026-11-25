@@ -34,7 +34,8 @@ namespace PSSCollection.Core.Screens
         private bool UsesFire => false;
 
         /// <summary>Invaders, Centipede and Hopper steer by tilting the phone.</summary>
-        private static bool UsesTilt(GameId id) => id is GameId.Invaders or GameId.Centipede or GameId.Hopper;
+        private static bool UsesTilt(GameId id) =>
+            id is GameId.Invaders or GameId.Centipede or GameId.Hopper or GameId.LightCycle;
 
         /// <summary>Touches that start on a HUD button belong to that button, never the game.</summary>
         private bool InHudButton(GameInput input, TouchContact touch)
@@ -105,6 +106,7 @@ namespace PSSCollection.Core.Screens
         private bool _stormDragged;
         private bool _stormReturning;
         private double _tiltHopCooldown;
+        private bool _tiltTurnArmed = true;
         private string _tiltReadout = string.Empty;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
@@ -343,15 +345,15 @@ namespace PSSCollection.Core.Screens
                 float tilt = Game.Platform.Tilt;
                 float pitch = Game.Platform.TiltY;
 
+                // Compare each axis against its own threshold, so a phone that sits at a
+                // slight angle does not make one axis always win.
+                float leanX = Math.Abs(tilt) / 0.18f;
+                float leanY = Math.Abs(pitch) / 0.28f;
+
                 if (_gameId == GameId.Hopper)
                 {
                     // Tilt hops the frog, at a steady rhythm while the phone stays tipped.
                     _tiltHopCooldown -= deltaSeconds;
-
-                    // Compare each axis against its own threshold, so a phone that sits at a
-                    // slight angle does not make one axis always win.
-                    float leanX = Math.Abs(tilt) / 0.18f;
-                    float leanY = Math.Abs(pitch) / 0.28f;
 
                     if (_tiltHopCooldown <= 0 && (leanX > 1f || leanY > 1f))
                     {
@@ -375,6 +377,36 @@ namespace PSSCollection.Core.Screens
 
                     _tiltReadout = MathF.Round(tilt, 2).ToString("0.00") + " / " +
                                    MathF.Round(pitch, 2).ToString("0.00");
+
+                    return new InputState(left, right, up, down, false, pause, false);
+                }
+
+                if (_gameId == GameId.LightCycle)
+                {
+                    // One turn per lean: the phone has to come back level before the next turn,
+                    // otherwise a held tilt would bank the bike at every corner it could.
+                    if (leanX < 0.5f && leanY < 0.5f)
+                        _tiltTurnArmed = true;
+
+                    if (_tiltTurnArmed && (leanX > 1f || leanY > 1f))
+                    {
+                        _tiltTurnArmed = false;
+                        if (leanX >= leanY)
+                        {
+                            if (tilt < 0)
+                                left = true;
+                            else
+                                right = true;
+                        }
+                        else if (pitch < 0)
+                        {
+                            up = true;
+                        }
+                        else
+                        {
+                            down = true;
+                        }
+                    }
 
                     return new InputState(left, right, up, down, false, pause, false);
                 }
