@@ -204,8 +204,7 @@ namespace PSSCollection.Core.Screens
                 new Entity(kind, System.Numerics.Vector2.Zero, new System.Numerics.Vector2(44, 44), 0), info.Id, time);
 
             Canvas.TextShadowed(info.Title, new Vector2(card.X + 18, card.Y + 16), 3f, Palette.Text, Palette.Background);
-            Canvas.Text(info.Year + "   PSS", card.X + 18, card.Y + 56, 1.5f, accent);
-            Canvas.Text(info.Tagline, card.X + 18, card.Y + 82, 1.7f, Palette.TextDim);
+            Canvas.Text(info.Tagline, card.X + 18, card.Y + 56, 1.7f, Palette.TextDim);
 
             int best = Game.Scores.Best(info.Id);
             Canvas.Text("BEST", new Vector2(card.X + 18, card.Y + 114), 1.4f, Palette.TextDim);
