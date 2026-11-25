@@ -29,6 +29,9 @@ namespace PSSCollection.Core.Screens
 
         private const float StickDeadZone = 14f;
 
+        /// <summary>Hopper and Light Cycle never shoot, so their touch layout has no fire button.</summary>
+        private bool UsesFire => _gameId is GameId.Invaders or GameId.Centipede or GameId.ElektroStorm;
+
         private double _finishedTimer;
         private bool _finished;
         private int _bestBefore;
@@ -215,7 +218,7 @@ namespace PSSCollection.Core.Screens
                         continue;
                     }
 
-                    if (Vector2.Distance(touch.Position, FireCentre) <= FireRadius)
+                    if (UsesFire && Vector2.Distance(touch.Position, FireCentre) <= FireRadius)
                     {
                         fire = true;
                         firePressed |= touch.Pressed;
@@ -390,14 +393,17 @@ namespace PSSCollection.Core.Screens
             Canvas.Line(DpadCentre + new Vector2(58, 0), DpadCentre + new Vector2(28, -16), Palette.WithAlpha(Palette.Cyan, pulse), 4f);
             Canvas.Line(DpadCentre + new Vector2(58, 0), DpadCentre + new Vector2(28, 16), Palette.WithAlpha(Palette.Cyan, pulse), 4f);
 
-            Canvas.Circle(FireCentre, FireRadius, new Color(255, 255, 255, 18));
-            Canvas.CircleOutline(FireCentre, FireRadius, Palette.WithAlpha(Palette.Magenta, 0.5f), 3f);
-            Canvas.Circle(FireCentre, FireRadius * 0.62f, Palette.WithAlpha(Palette.Magenta, 0.16f));
-            Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24), 2f,
-                Palette.WithAlpha(Palette.Magenta, 0.9f));
+            if (UsesFire)
+            {
+                Canvas.Circle(FireCentre, FireRadius, new Color(255, 255, 255, 18));
+                Canvas.CircleOutline(FireCentre, FireRadius, Palette.WithAlpha(Palette.Magenta, 0.5f), 3f);
+                Canvas.Circle(FireCentre, FireRadius * 0.62f, Palette.WithAlpha(Palette.Magenta, 0.16f));
+                Canvas.TextCentred("FIRE", new Rectangle((int)(FireCentre.X - 50), (int)(FireCentre.Y - 12), 100, 24),
+                    2f, Palette.WithAlpha(Palette.Magenta, 0.9f));
+            }
 
-            Canvas.TextCentred("DRAG TO MOVE - YOUR GUNS FIRE AS YOU MOVE", new Rectangle(0, 600, 1280, 22), 1.6f,
-                Palette.WithAlpha(Palette.TextDim, 0.85f));
+            Canvas.TextCentred(UsesFire ? "DRAG TO MOVE - YOUR GUNS FIRE AS YOU MOVE" : "DRAG TO MOVE",
+                new Rectangle(0, 600, 1280, 22), 1.6f, Palette.WithAlpha(Palette.TextDim, 0.85f));
         }
     }
 }
