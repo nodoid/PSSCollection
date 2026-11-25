@@ -83,8 +83,11 @@ namespace PSSCollection.Tests
             InvadersGame game = Start();
 
             game.Update(0.016, InputState.Move(false, false).WithFire(true));
-            game.TestClearBombs();
-            game.Update(0.3, InputState.Move(false, false).WithFire(true));
+            Assert.True(game.BulletActive);
+
+            // The first shot leaves the screen, then a second one is allowed.
+            game.Update(0.75, InputState.Move(false, false).WithFire(true));
+            game.Update(0.02, InputState.Move(false, false).WithFire(true));
 
             Assert.True(game.BulletActive);
         }
@@ -96,13 +99,13 @@ namespace PSSCollection.Tests
             game.TestSetFormation(0, 0);
 
             // Row 0 scores 30; row 4 scores 10.
-            game.TestSpawnBullet(100, 130);
+            game.TestSpawnBullet(100, 186);
             game.Update(0.05, InputState.None);
             Assert.Equal(30, game.Score);
             Assert.Equal(5 * InvadersGame.Columns - 1, game.AlienCount);
 
             game.TestSetInvulnerable(true);
-            game.TestSpawnBullet(280, 320);
+            game.TestSpawnBullet(280, 376);
             game.Update(0.05, InputState.None);
             Assert.Equal(40, game.Score);
         }
@@ -112,7 +115,7 @@ namespace PSSCollection.Tests
         {
             InvadersGame game = Start(SkillLevel.Ace);
             game.TestSetFormation(0, 0);
-            game.TestSpawnBullet(100, 130);
+            game.TestSpawnBullet(100, 186);
             game.Update(0.05, InputState.None);
 
             Assert.Equal(60, game.Score);   // 30 x 2
@@ -149,7 +152,7 @@ namespace PSSCollection.Tests
             game.TestSetInvulnerable(true);
             game.TestSpawnUfo(500, 300);
 
-            game.TestSpawnBullet(510, 90);
+            game.TestSpawnBullet(510, 150);
             game.Update(0.05, InputState.None);
 
             Assert.False(game.UfoActive);

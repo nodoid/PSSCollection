@@ -18,7 +18,9 @@ namespace PSSCollection.Engine.Games
         public const float AlienHeight = 30f;
         public const float AlienSpacingX = 58f;
         public const float AlienSpacingY = 46f;
-        public const float FormationTop = 84f;
+        // The formation starts below the mobile HUD strip so no alien is hidden by it, and the
+        // mystery ship flies in the clear band between the HUD and the formation.
+        public const float FormationTop = 140f;
         public const float FormationLeft = 96f;
         public const float AlienStepX = 10f;
         public const float AlienDropY = 24f;
@@ -36,6 +38,10 @@ namespace PSSCollection.Engine.Games
         public const int BunkerCount = 4;
         public const double PlayerFireCooldown = 0.26;
         public const int BaseRows = 5;
+        public const float UfoTop = 96f;
+        public const float UfoWidth = 64f;
+        public const float UfoHeight = 30f;
+        public const float UfoSpeed = 95f;
         public const int UfoPointsLow = 50;
         public const int UfoPointsHigh = 300;
 
@@ -277,7 +283,7 @@ namespace PSSCollection.Engine.Games
 
             if (_ufoActive)
             {
-                var ufo = new Entity(EntityKind.Ufo, new Vector2(_ufoX, 36f), new Vector2(64f, 28f));
+                var ufo = new Entity(EntityKind.Ufo, new Vector2(_ufoX, UfoTop), new Vector2(UfoWidth, UfoHeight));
                 if (Entity.Overlap(new Vector2(_bulletX, _bulletY), new Vector2(6, 16), ufo.Position, ufo.Size))
                 {
                     Award(_ufoPoints);
@@ -437,7 +443,7 @@ namespace PSSCollection.Engine.Games
         {
             if (_ufoActive)
             {
-                _ufoX += (float)(130 * deltaSeconds);
+                _ufoX += (float)(UfoSpeed * deltaSeconds);
                 if (_ufoX > Width + 40)
                     _ufoActive = false;
                 return;
@@ -579,7 +585,7 @@ namespace PSSCollection.Engine.Games
                 _entities.Add(new Entity(EntityKind.Bomb, bomb, new Vector2(6, 14)));
 
             if (_ufoActive)
-                _entities.Add(new Entity(EntityKind.Ufo, new Vector2(_ufoX, 36f), new Vector2(64f, 28f)));
+                _entities.Add(new Entity(EntityKind.Ufo, new Vector2(_ufoX, UfoTop), new Vector2(UfoWidth, UfoHeight)));
         }
 
         // ---- Test support -------------------------------------------------------------
