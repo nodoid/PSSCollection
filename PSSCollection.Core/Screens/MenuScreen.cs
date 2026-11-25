@@ -27,6 +27,9 @@ namespace PSSCollection.Core.Screens
 
         private static int Count => Catalogue.Count;
 
+        /// <summary>The QUIT chip below the grid is reachable with the arrows, past the last game.</summary>
+        private static int QuitIndex => Count;
+
         private static Rectangle CardRect(int index)
         {
             int totalWidth = GridColumns * CardWidth + (GridColumns - 1) * GapX;
@@ -38,7 +41,11 @@ namespace PSSCollection.Core.Screens
                 CardWidth, CardHeight);
         }
 
-        public override void Enter() => Game.Audio.PlayMusic(Catalogue.At(_index));
+        public override void Enter()
+        {
+            if (_index < Count)
+                Game.Audio.PlayMusic(Catalogue.At(_index));
+        }
 
         public override void Update(double deltaSeconds, GameInput input)
         {
@@ -73,18 +80,37 @@ namespace PSSCollection.Core.Screens
                     SetIndex(i, false);
             }
 
-            if (!Game.IsMobile && input.PointerClicked &&
-                QuitButton.Contains((int)input.Pointer.X, (int)input.Pointer.Y))
+            if (!Game.IsMobile && Hover(input, QuitButton))
             {
-                Game.QuitToDesktop();
-                return;
+                SetIndex(QuitIndex, false);
+
+                if (input.PointerClicked)
+                {
+                    Game.QuitToDesktop();
+                    return;
+                }
             }
 
             if (input.Horizontal != 0)
-                SetIndex(Wrap(_index + input.Horizontal), true);
+                SetIndex(_index == QuitIndex
+                    ? (input.Horizontal < 0 ? Count - 1 : 0)
+                    : Wrap(_index + input.Horizontal), true);
 
-            if (input.Vertical != 0)
-                SetIndex(Wrap(_index + input.Vertical * GridColumns), true);
+            if (input.Vertical > 0)
+            {
+                // Down off the bottom row steps onto QUIT; from a top row it drops a row.
+                if (_index == QuitIndex)
+                {
+                }
+                else if (_index / GridColumns == 1)
+                    SetIndex(QuitIndex, true);
+                else
+                    SetIndex(Wrap(_index + GridColumns), true);
+            }
+            else if (input.Vertical < 0)
+            {
+                SetIndex(_index == QuitIndex ? Count - 1 : Wrap(_index - GridColumns), true);
+            }
 
             if (input.HighScores)
             {
@@ -101,6 +127,12 @@ namespace PSSCollection.Core.Screens
 
             if (input.Confirm)
             {
+                if (_index == QuitIndex)
+                {
+                    Game.QuitToDesktop();
+                    return;
+                }
+
                 Game.Audio.Play(SoundId.MenuSelect);
                 Go(new SkillScreen(Game, Catalogue.At(_index)));
             }
@@ -136,6 +168,8 @@ namespace PSSCollection.Core.Screens
             return ((index % count) + count) % count;
         }
 
+        private GameId SelectedGame => Catalogue.At(_index < Count ? _index : Count - 1);
+
         private void SetIndex(int index, bool sound)
         {
             if (index == _index)
@@ -145,12 +179,13 @@ namespace PSSCollection.Core.Screens
             if (sound)
                 Game.Audio.Play(SoundId.MenuMove);
 
-            Game.Audio.PlayMusic(Catalogue.At(_index));
+            if (_index < Count)
+                Game.Audio.PlayMusic(Catalogue.At(_index));
         }
 
         public override void Draw(double time)
         {
-            GameId selected = Catalogue.At(_index);
+            GameId selected = SelectedGame;
             Color accent = Palette.ForGame(selected);
             Ui.Backdrop(Canvas, time, accent);
             Ui.Header(Canvas, "THE PSS ORIC COLLECTION", "CHOOSE A GAME", accent, time);
@@ -166,7 +201,7 @@ namespace PSSCollection.Core.Screens
             Ui.Footer(Canvas, left, "BEST SCORES ARE KEPT", accent);
 
             if (!Game.IsMobile)
-                Ui.Button(Canvas, QuitButton, "QUIT", false, Palette.TextDim, 1.5f);
+                Ui.Button(Canvas, QuitButton, "QUIT", _index == QuitIndex, Palette.TextDim, 1.5f);
 
 
             Canvas.Text("EVERY GAME HAS FOUR SKILL LEVELS AND ITS OWN HIGH SCORE TABLE",
