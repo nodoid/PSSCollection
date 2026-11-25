@@ -44,6 +44,17 @@ namespace PSSCollection.Core.Screens
         {
             _time += deltaSeconds;
 
+            if (Game.IsMobile && input.PointerClicked)
+            {
+                // A tap that misses every card still picks the closest one, so a small mapping
+                // error cannot send the player into the wrong game.
+                int picked = NearestCard(input.Pointer);
+                _index = picked;
+                Game.Audio.Play(SoundId.MenuSelect);
+                Go(new SkillScreen(Game, Catalogue.At(picked)));
+                return;
+            }
+
             // A click on any card picks that game straight away, not just the highlighted one.
             for (int i = 0; i < Count; i++)
             {
@@ -95,6 +106,28 @@ namespace PSSCollection.Core.Screens
             }
         }
 
+        /// <summary>The card whose centre is closest to a point - used when a tap lands between cards.</summary>
+        private static int NearestCard(Vector2 point)
+        {
+            int best = 0;
+            float bestDistance = float.MaxValue;
+
+            for (int i = 0; i < Count; i++)
+            {
+                Rectangle card = CardRect(i);
+                float dx = point.X - (card.X + card.Width * 0.5f);
+                float dy = point.Y - (card.Y + card.Height * 0.5f);
+                float distance = dx * dx + dy * dy;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = i;
+                }
+            }
+
+            return best;
+        }
+
         private static int Wrap(int index)
         {
             int count = Count;
@@ -134,6 +167,7 @@ namespace PSSCollection.Core.Screens
 
             if (!Game.IsMobile)
                 Ui.Button(Canvas, QuitButton, "QUIT", false, Palette.TextDim, 1.5f);
+
 
             Canvas.Text("EVERY GAME HAS FOUR SKILL LEVELS AND ITS OWN HIGH SCORE TABLE",
                 80, 596, 1.7f, Palette.WithAlpha(Palette.TextDim, 0.9f));
