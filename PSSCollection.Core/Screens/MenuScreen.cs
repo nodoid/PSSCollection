@@ -257,14 +257,12 @@ namespace PSSCollection.Core.Screens
             Canvas.RoundedRect(card, Palette.WithAlpha(Palette.Panel, 0.6f), 12);
             Canvas.RoundedOutline(card, Palette.WithAlpha(Palette.PanelEdge, 0.7f), 12, 1);
 
-            Canvas.TextCentred("PERSONAL SOFTWARE SERVICES", new Rectangle(card.X, card.Y + 38, card.Width, 24), 1.7f,
-                Palette.WithAlpha(Palette.TextDim, 0.9f));
-            Canvas.TextCentred("ORIC-1 / ATMOS - 1983", new Rectangle(card.X, card.Y + 66, card.Width, 24), 1.6f,
-                Palette.WithAlpha(Palette.TextDim, 0.7f));
-            Canvas.TextCentred("RECREATED IN MONOGAME", new Rectangle(card.X, card.Y + 96, card.Width, 24), 1.6f,
-                Palette.WithAlpha(Palette.Cyan, 0.8f));
-            Canvas.TextCentred("HIGH SCORES PERSIST BETWEEN RUNS", new Rectangle(card.X, card.Y + 132, card.Width, 24),
-                1.3f, Palette.WithAlpha(Palette.TextDim, 0.6f));
+            Canvas.TextCentred("(C) 2025 PAUL F. JOHNSON", new Rectangle(card.X, card.Y + 34, card.Width, 24), 1.7f,
+                Palette.WithAlpha(Palette.Text, 0.9f));
+            Canvas.TextCentred("BASED ON THE ORIC ORIGINALS BY PSS", new Rectangle(card.X, card.Y + 66, card.Width, 24),
+                1.4f, Palette.WithAlpha(Palette.TextDim, 0.9f));
+            Canvas.TextCentred("WRITTEN USING MONOGAME", new Rectangle(card.X, card.Y + 104, card.Width, 24), 1.6f,
+                Palette.WithAlpha(Palette.Cyan, 0.85f));
         }
     }
 }
