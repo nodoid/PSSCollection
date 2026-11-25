@@ -105,6 +105,7 @@ namespace PSSCollection.Core.Screens
         private bool _stormDragged;
         private bool _stormReturning;
         private double _tiltHopCooldown;
+        private string _tiltReadout = string.Empty;
 
         public PlayScreen(PssGame game, GameId gameId, SkillLevel skill) : base(game)
         {
@@ -347,10 +348,15 @@ namespace PSSCollection.Core.Screens
                     // Tilt hops the frog, at a steady rhythm while the phone stays tipped.
                     _tiltHopCooldown -= deltaSeconds;
 
-                    if (_tiltHopCooldown <= 0 && (Math.Abs(tilt) > 0.18f || Math.Abs(pitch) > 0.28f))
+                    // Compare each axis against its own threshold, so a phone that sits at a
+                    // slight angle does not make one axis always win.
+                    float leanX = Math.Abs(tilt) / 0.18f;
+                    float leanY = Math.Abs(pitch) / 0.28f;
+
+                    if (_tiltHopCooldown <= 0 && (leanX > 1f || leanY > 1f))
                     {
                         _tiltHopCooldown = 0.30;
-                        if (Math.Abs(tilt) >= Math.Abs(pitch))
+                        if (leanX >= leanY)
                         {
                             if (tilt < 0)
                                 left = true;
@@ -366,6 +372,9 @@ namespace PSSCollection.Core.Screens
                             down = true;
                         }
                     }
+
+                    _tiltReadout = MathF.Round(tilt, 2).ToString("0.00") + " / " +
+                                   MathF.Round(pitch, 2).ToString("0.00");
 
                     return new InputState(left, right, up, down, false, pause, false);
                 }
@@ -639,6 +648,12 @@ namespace PSSCollection.Core.Screens
             {
                 Canvas.TextCentred("DRAG TO AIM    TAP TO FIRE", new Rectangle(0, 698, 1280, 18), 1.5f,
                     Palette.WithAlpha(Palette.TextDim, 0.9f));
+                return;
+            }
+
+            if (_gameId == GameId.Hopper)
+            {
+                Canvas.Text("TILT " + _tiltReadout, 24, 690, 1.4f, Palette.WithAlpha(Palette.TextDim, 0.85f));
                 return;
             }
 
